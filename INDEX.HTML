@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadio Maracaná - BIM & Visualización 3D Paramétrica</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        rio: { blue: '#0284c7', green: '#10b981', gold: '#f59e0b', dark: '#0f172a' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar and canvas styling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glow-green { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+        .glow-blue { box-shadow: 0 0 15px rgba(2, 132, 199, 0.4); }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans overflow-hidden select-none bg-slate-950 text-slate-100">
+
+    <!-- HEADER BAR -->
+    <header class="h-16 bg-slate-900/90 border-b border-slate-800 px-4 flex items-center justify-between z-20 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-sky-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <i class="fa-solid font-bold text-slate-950 text-xl fa-stadium"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-emerald-400 via-sky-300 to-amber-300 bg-clip-text text-transparent">
+                    ESTADIO MARACANÁ 3D
+                </h1>
+                <p class="text-xs text-slate-400">Diseño Paramétrico BIM, Isóptica & Entorno Urbano Rio 2026</p>
+            </div>
+        </div>
+
+        <!-- Wallet and Quick Info Stats -->
+        <div class="flex items-center space-x-4">
+            <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5 flex items-center space-x-2">
+                <i class="fa-solid fa-wallet text-emerald-400"></i>
+                <div class="text-xs">
+                    <div class="text-slate-400 text-[10px] uppercase font-bold">Billetera Usuario</div>
+                    <div id="wallet-balance" class="font-mono font-bold text-emerald-400">$ 5.000.000 COP</div>
+                </div>
+            </div>
+
+            <div class="hidden md:flex bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5 items-center space-x-3">
+                <div class="text-xs text-right">
+                    <span class="text-slate-400 block text-[10px] font-bold">CAPACIDAD BIM</span>
+                    <span class="font-bold text-slate-200">78,838 Asientos</span>
+                </div>
+                <div class="h-6 w-px bg-slate-700"></div>
+                <div class="text-xs">
+                    <span class="text-slate-400 block text-[10px] font-bold">ESTADO CABLES</span>
+                    <span class="font-bold text-amber-400"><i class="fa-solid fa-check-circle mr-1"></i>850 kN</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN WRAPPER -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- LEFT CONTROL PANEL / TABS -->
+        <aside class="w-full md:w-96 bg-slate-900/95 border-r border-slate-800 flex flex-col z-10 shrink-0 transition-all duration-300" id="sidebar">
+            <!-- TAB BUTTONS -->
+            <div class="grid grid-cols-4 bg-slate-950/80 p-1 border-b border-slate-800 text-xs font-semibold">
+                <button onclick="switchTab('tab-3d')" id="btn-tab-3d" class="py-2.5 rounded-lg text-emerald-400 bg-slate-800 shadow transition flex flex-col items-center gap-1">
+                    <i class="fa-solid fa-cube text-sm"></i>
+                    <span>Vista 3D</span>
+                </button>
+                <button onclick="switchTab('tab-seats')" id="btn-tab-seats" class="py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition flex flex-col items-center gap-1">
+                    <i class="fa-solid fa-chair text-sm"></i>
+                    <span>Asientos</span>
+                </button>
+                <button onclick="switchTab('tab-bim')" id="btn-tab-bim" class="py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition flex flex-col items-center gap-1">
+                    <i class="fa-solid fa-calculator text-sm"></i>
+                    <span>BIM & Math</span>
+                </button>
+                <button onclick="switchTab('tab-exterior')" id="btn-tab-exterior" class="py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition flex flex-col items-center gap-1">
+                    <i class="fa-solid fa-car text-sm"></i>
+                    <span>Entorno</span>
+                </button>
+            </div>
+
+            <!-- TAB CONTENT CONTAINER -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-5 text-sm">
+
+                <!-- TAB 1: 3D CONTROLS -->
+                <div id="tab-3d" class="tab-content space-y-4">
+                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
+                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider flex items-center justify-between">
+                            <span><i class="fa-solid fa-sliders text-emerald-400 mr-2"></i>Controles del Techo y Estructura</span>
+                        </h3>
+                        <div class="flex items-center justify-between bg-slate-900/80 p-3 rounded-lg border border-slate-700">
+                            <div>
+                                <div class="font-semibold text-slate-200">Cubierta PTFE & Cables</div>
+                                <div class="text-xs text-slate-400">Membrana reticular tensionada</div>
+                            </div>
+                            <button id="toggle-roof-btn" onclick="toggleRoof()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-eye" id="roof-icon"></i>
+                                <span id="roof-status-text">VISIBLE</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
+                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">
+                            <i class="fa-solid fa-camera text-sky-400 mr-2"></i>Perspectivas de Cámara
+                        </h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setCameraView('overview')" class="p-2 bg-slate-900/90 hover:bg-slate-800 rounded-lg text-xs font-medium border border-slate-700 text-left flex items-center gap-2">
+                                <i class="fa-solid fa-globe text-sky-400"></i> Panorámica
+                            </button>
+                            <button onclick="setCameraView('pitch')" class="p-2 bg-slate-900/90 hover:bg-slate-800 rounded-lg text-xs font-medium border border-slate-700 text-left flex items-center gap-2">
+                                <i class="fa-solid fa-futbol text-emerald-400"></i> Nivel Cancha
+                            </button>
+                            <button onclick="setCameraView('parking')" class="p-2 bg-slate-900/90 hover:bg-slate-800 rounded-lg text-xs font-medium border border-slate-700 text-left flex items-center gap-2">
+                                <i class="fa-solid fa-square-parking text-amber-400"></i> Parqueaderos
+                            </button>
+                            <button onclick="setCameraView('corcovado')" class="p-2 bg-slate-900/90 hover:bg-slate-800 rounded-lg text-xs font-medium border border-slate-700 text-left flex items-center gap-2">
+                                <i class="fa-solid fa-mountain text-purple-400"></i> Vista Rio & Cristo
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
+                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">
+                            <i class="fa-solid fa-sun text-amber-400 mr-2"></i>Iluminación y Hora del Día
+                        </h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-xs text-slate-400">
+                                <span>Simulación Solar</span>
+                                <span id="time-display" class="font-mono text-amber-300">16:30 PM (Atardecer Rio)</span>
+                            </div>
+                            <input type="range" id="time-slider" min="6" max="22" step="0.5" value="16.5" oninput="updateTimeOfDay(this.value)" class="w-full accent-amber-400 bg-slate-900 rounded-lg h-2">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: SEAT MARKET -->
+                <div id="tab-seats" class="tab-content hidden space-y-4">
+                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
+                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider flex justify-between items-center">
+                            <span><i class="fa-solid fa-shop text-emerald-400 mr-2"></i>Leyenda Estricta de 2 Colores</span>
+                        </h3>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="flex items-center space-x-2 bg-slate-900/80 p-2 rounded-lg border border-emerald-500/30">
+                                <span class="w-4 h-4 rounded-full bg-emerald-500 inline-block shadow shadow-emerald-500/50"></span>
+                                <span class="font-medium text-emerald-300">VERDE: Disponible</span>
+                            </div>
+                            <div class="flex items-center space-x-2 bg-slate-900/80 p-2 rounded-lg border border-slate-600">
+                                <span class="w-4 h-4 rounded-full bg-slate-500 inline-block"></span>
+                                <span class="font-medium text-slate-400">GRIS: Ocupado</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2D SEAT MATRIX PREVIEW -->
+                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">Matriz Interactiva de Secciones</h3>
+                            <span class="text-[10px] bg-sky-950 text-sky-300 px-2 py-0.5 rounded border border-sky-800">Haz clic en un punto</span>
+                        </div>
+                        <div id="seat-matrix-grid" class="grid grid-cols-10 gap-1 bg-slate-950 p-2 rounded-xl border border-slate-800 max-h-48 overflow-y-auto">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- SELECTED SEAT DETAILS CARD -->
+                    <div id="selected-seat-card" class="bg-gradient-to-br from-slate-900 to-slate-800 p-4 rounded-xl border border-emerald-500/40 space-y-3 shadow-xl">
+                        <div class="flex items-center justify-between border-b border-slate-700 pb-2">
+                            <div>
+                                <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Asiento Seleccionado</span>
+                                <div id="card-seat-code" class="text-base font-extrabold text-white">MAR-Baja-N12-045</div>
+                            </div>
+                            <span id="card-seat-status" class="px-2 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                DISPONIBLE
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+                                <span class="text-slate-400 text-[10px] block">Cota de Elevación (+h)</span>
+                                <span id="card-seat-h" class="font-mono font-bold text-slate-200">+12.45 m</span>
+                            </div>
+                            <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+                                <span class="text-slate-400 text-[10px] block">Isóptica Catenaria (C)</span>
+                                <span id="card-seat-c" class="font-mono font-bold text-sky-400">0.125 m (Cumple)</span>
+                            </div>
+                            <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+                                <span class="text-slate-400 text-[10px] block">Distancia Focal</span>
+                                <span id="card-seat-dist" class="font-mono font-bold text-slate-200">42.8 m</span>
+                            </div>
+                            <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+                                <span class="text-slate-400 text-[10px] block">Calidad de Vista</span>
+                                <span id="card-seat-quality" class="font-mono font-bold text-amber-400">94.2 %</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950/90 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block font-semibold">PRECIO DE TICKET P(h)</span>
+                                <div id="card-seat-price" class="text-lg font-black text-emerald-400 font-mono">$ 364.100 COP</div>
+                            </div>
+                            <button id="buy-seat-btn" onclick="toggleSeatPurchase()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition">
+                                COMPRAR ASIENTO
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: BIM & MATHEMATICS -->
+                <div id="tab-bim" class="tab-content hidden space-y-4">
+                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
+                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">
+                            <i class="fa-solid fa-chart-line text-amber-400 mr-2"></i>Ecuación Cuadrática: Parabóla de Cables del Techo
+                        </h3>
+                        <p class="text-xs text-slate-400">
+                            Modelo tensión-flecha: <span class="font-mono text-amber-300">y(x) = (4f/L²)·x²</span>. Tensión máxima en anillo: <span class="font-mono text-emerald-400">T_máx = 960 kN</span>.
+                        </p>
+                        <div class="h-44 w-full bg-slate-950 p-2 rounded-xl border border-slate-800">
+                            <canvas id="cableChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
+                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">
+                            <i class="fa-solid fa-cubes text-sky-400 mr-2"></i>Cálculo Decimal BIM & Estructura Pre fabricada
+                        </h3>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between p-2 bg-slate-900/80 rounded border border-slate-800">
+                                <span class="text-slate-400">Volumen Concreto Tribunas:</span>
+                                <span class="font-mono font-bold text-slate-200">42,850.75 m³</span>
+                            </div>
+                            <div class="flex justify-between p-2 bg-slate-900/80 rounded border border-slate-800">
+                                <span class="text-slate-400">60 Columnas Estr. en Y:</span>
+                                <span class="font-mono font-bold text-slate-200">12,480.00 m³</span>
+                            </div>
+                            <div class="flex justify-between p-2 bg-slate-900/80 rounded border border-slate-800">
+                                <span class="text-slate-400">Área Membrana PTFE:</span>
+                                <span class="font-mono font-bold text-sky-400">45,700.50 m²</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: EXTERIOR & PARKING -->
+                <div id="tab-exterior" class="tab-content hidden space-y-4">
+                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
+                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider flex items-center justify-between">
+                            <span><i class="fa-solid fa-square-parking text-amber-400 mr-2"></i>Parqueaderos Asfaltados</span>
+                            <span class="text-[10px] bg-emerald-900 text-emerald-300 px-2 py-0.5 rounded">Alineación Estricta</span>
+                        </h3>
+                        <p class="text-xs text-slate-300">
+                            Zonas de parqueo del Norte y Sur/Oeste totalmente delimitadas sobre planchas asfaltadas de alta resistencia con celdas pintadas.
+                        </p>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                <div class="text-slate-400 text-[10px]">Sector Norte</div>
+                                <div class="font-bold text-emerald-400">60 Puestos Marcados</div>
+                                <div class="text-[10px] text-slate-500">Autos alineados 100%</div>
+                            </div>
+                            <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                <div class="text-slate-400 text-[10px]">Sector Sur / Oeste</div>
+                                <div class="font-bold text-emerald-400">60 Puestos Marcados</div>
+                                <div class="text-[10px] text-slate-500">Demarcación blanca</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
+                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">
+                            <i class="fa-solid fa-utensils text-rose-400 mr-2"></i>Food Trucks y Kioscos Exteriores
+                        </h3>
+                        <p class="text-xs text-slate-300">
+                            Puntos de comida rápida distribuidos radialmente en la explanada peatonal (concourse) exterior con toldos de colores e iluminación cálida.
+                        </p>
+                        <div class="space-y-1.5 text-xs">
+                            <div class="flex items-center space-x-2 text-slate-300">
+                                <i class="fa-solid fa-burger text-amber-400 w-4"></i>
+                                <span>8 Food Trucks con zonas de atención</span>
+                            </div>
+                            <div class="flex items-center space-x-2 text-slate-300">
+                                <i class="fa-solid fa-store text-sky-400 w-4"></i>
+                                <span>12 Kioscos de bebidas y souvenirs Maracaná</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- 3D VIEWPORT CONTAINER -->
+        <main class="flex-1 relative h-full bg-slate-950 overflow-hidden">
+            <div id="three-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+            <!-- OVERLAY HUD BUTTONS -->
+            <div class="absolute top-4 left-4 z-10 flex items-center space-x-2">
+                <button onclick="toggleRoof()" class="glass-panel hover:bg-slate-800 px-3 py-2 rounded-xl text-xs font-bold text-emerald-400 border border-emerald-500/30 shadow-lg flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Techo: <span id="hud-roof-text">VISIBLE</span></span>
+                </button>
+                <div class="glass-panel px-3 py-2 rounded-xl text-xs font-bold text-slate-300 border border-slate-700 hidden sm:flex items-center gap-2">
+                    <i class="fa-solid fa-eye text-sky-400"></i>
+                    <span id="hud-mode-text">Modo: Exploración 3D</span>
+                </div>
+            </div>
+
+            <!-- HOVER TOOLTIP CARD -->
+            <div id="seat-tooltip" class="absolute hidden pointer-events-none z-30 glass-panel p-2.5 rounded-xl border border-emerald-500/50 text-xs shadow-2xl transition-opacity duration-150">
+                <div class="font-bold text-emerald-400" id="tooltip-code">MAR-000</div>
+                <div class="text-[10px] text-slate-300" id="tooltip-price">$ 0 COP</div>
+                <div class="text-[9px] text-slate-400" id="tooltip-status">DISPONIBLE</div>
+            </div>
+
+            <!-- CAMERA HELPER CONTROLS HUD -->
+            <div class="absolute bottom-4 right-4 z-10 flex items-center space-x-2">
+                <button onclick="resetCamera()" class="glass-panel hover:bg-slate-800 p-2.5 rounded-xl text-slate-300 border border-slate-700 shadow-lg text-xs" title="Resetear Cámara">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let scene, camera, renderer, controls;
+        let roofGroup, stadiumGroup, carsGroup, kiosksGroup, landscapeGroup, seatsGroup;
+        let selectedSeatMesh = null;
+        let selectedSeatData = null;
+        let isRoofVisible = true;
+        let walletBalance = 5000000; // $5.000.000 COP initial
+
+        // Data arrays for seats
+        const seatDataList = [];
+        const seatMeshes = [];
+
+        // Colors strict 2-color rule
+        const COLOR_AVAILABLE = 0x10b981; // Green
+        const COLOR_OCCUPIED = 0x6b7280;  // Gray
+        const COLOR_SELECTED = 0xf59e0b;  // Gold/Amber outline
+
+        function init3D() {
+            const container = document.getElementById('three-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0f1d);
+            scene.fog = new THREE.FogExp2(0x0a0f1d, 0.0018);
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 2000);
+            camera.position.set(160, 110, 220);
+
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.1;
+            container.appendChild(renderer.domElement);
+
+            // OrbitControls setup
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 - 0.02; // Don't go below ground
+            controls.minDistance = 15;
+            controls.maxDistance = 600;
+            controls.target.set(0, 10, 0);
+
+            // Light sources
+            setupLighting();
+
+            // Root groups
+            stadiumGroup = new THREE.Group();
+            roofGroup = new THREE.Group();
+            carsGroup = new THREE.Group();
+            kiosksGroup = new THREE.Group();
+            landscapeGroup = new THREE.Group();
+            seatsGroup = new THREE.Group();
+
+            scene.add(stadiumGroup);
+            scene.add(roofGroup);
+            scene.add(carsGroup);
+            scene.add(kiosksGroup);
+            scene.add(landscapeGroup);
+            scene.add(seatsGroup);
+
+            // Build Maracaná Elements
+            buildRioLandscape();
+            buildPitchAndField();
+            buildDoubleTierStands();
+            buildStructuralColumnsAndRing();
+            buildRoofMembraneAndCables();
+            buildParkingLotsAndCars(); // RULE 1: STRICT PARKING & CARS
+            buildExteriorFoodTrucks(); // RULE 2: FOOD TRUCKS
+            build2DSeatMatrixUI();
+
+            // Raycasting & Interaction listeners
+            setupInteractions();
+
+            // Handle Resize
+            window.addEventListener('resize', onWindowResize);
+
+            // Animation Loop
+            animate();
+        }
+
+        let dirLight, hemiLight;
+        function setupLighting() {
+            hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x0f172a, 0.7);
+            scene.add(hemiLight);
+
+            dirLight = new THREE.DirectionalLight(0xfff3e0, 1.4);
+            dirLight.position.set(150, 180, 100);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 10;
+            dirLight.shadow.camera.far = 600;
+            const d = 180;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
+
+            // Warm ambient light for evening feel
+            const ambient = new THREE.AmbientLight(0x38bdf8, 0.25);
+            scene.add(ambient);
+        }
+
+        function buildRioLandscape() {
+            // Ground Plaza Base Plane
+            const plazaGeo = new THREE.CircleGeometry(320, 64);
+            const plazaMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 });
+            const plaza = new THREE.Mesh(plazaGeo, plazaMat);
+            plaza.rotation.x = -Math.PI / 2;
+            plaza.position.y = -0.1;
+            plaza.receiveShadow = true;
+            landscapeGroup.add(plaza);
+
+            // Guanabara Bay Water Mirror
+            const bayGeo = new THREE.PlaneGeometry(800, 400);
+            const bayMat = new THREE.MeshStandardMaterial({
+                color: 0x0284c7,
+                roughness: 0.1,
+                metalness: 0.8,
+                transparent: true,
+                opacity: 0.85
+            });
+            const bay = new THREE.Mesh(bayGeo, bayMat);
+            bay.rotation.x = -Math.PI / 2;
+            bay.position.set(280, -0.4, 0);
+            landscapeGroup.add(bay);
+
+            // Sugarloaf Mountain (Pan de Azúcar)
+            const sugarGeo = new THREE.ConeGeometry(45, 110, 16);
+            const mountainMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+            const sugarloaf = new THREE.Mesh(sugarGeo, mountainMat);
+            sugarloaf.position.set(260, 50, -180);
+            landscapeGroup.add(sugarloaf);
+
+            const sugar2 = new THREE.Mesh(new THREE.ConeGeometry(30, 70, 16), mountainMat);
+            sugar2.position.set(210, 30, -210);
+            landscapeGroup.add(sugar2);
+
+            // Corcovado Mountain with Christ Silhouette
+            const corcovado = new THREE.Mesh(new THREE.ConeGeometry(65, 140, 16), mountainMat);
+            corcovado.position.set(-250, 65, -190);
+            landscapeGroup.add(corcovado);
+
+            // Christ Statue Mesh Silhouette
+            const christGroup = new THREE.Group();
+            const bodyGeo = new THREE.CylinderGeometry(1.2, 1.8, 12, 8);
+            const whiteMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+            const body = new THREE.Mesh(bodyGeo, whiteMat);
+            
+            const armsGeo = new THREE.BoxGeometry(10, 1.2, 1.2);
+            const arms = new THREE.Mesh(armsGeo, whiteMat);
+            arms.position.y = 4;
+
+            christGroup.add(body);
+            christGroup.add(arms);
+            christGroup.position.set(-250, 138, -190);
+            landscapeGroup.add(christGroup);
+
+            // Tropical Palm Trees around concourse
+            for (let i = 0; i < 36; i++) {
+                const angle = (i / 36) * Math.PI * 2;
+                const r = 135 + (i % 3) * 6;
+                const px = Math.cos(angle) * r;
+                const pz = Math.sin(angle) * r;
+
+                // Avoid placing trees inside parking rectangular zones!
+                if ((px > 60 && px < 180 && Math.abs(pz) < 70) || (px < -60 && px > -180 && Math.abs(pz) < 70)) {
+                    continue; // Keep parking zone clear of trees
+                }
+
+                createPalmTree(px, pz);
+            }
+        }
+
+        function createPalmTree(x, z) {
+            const trunkGeo = new THREE.CylinderGeometry(0.4, 0.7, 10, 6);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.set(x, 5, z);
+            trunk.rotation.z = (Math.random() - 0.5) * 0.15;
+            trunk.castShadow = true;
+            landscapeGroup.add(trunk);
+
+            // Leaves
+            const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.6, side: THREE.DoubleSide });
+            for (let i = 0; i < 6; i++) {
+                const leaf = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 6), leafMat);
+                leaf.position.set(x, 9.8, z);
+                leaf.rotation.x = Math.PI / 3;
+                leaf.rotation.y = (i / 6) * Math.PI * 2;
+                landscapeGroup.add(leaf);
+            }
+        }
+
+        function buildPitchAndField() {
+            // Field base (105m x 68m scaled)
+            const pitchGeo = new THREE.PlaneGeometry(110, 75);
+            const pitchMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.7 });
+            const pitch = new THREE.Mesh(pitchGeo, pitchMat);
+            pitch.rotation.x = -Math.PI / 2;
+            pitch.receiveShadow = true;
+            stadiumGroup.add(pitch);
+
+            // Striped grass pattern overlay
+            for (let i = -50; i < 50; i += 10) {
+                const stripeGeo = new THREE.PlaneGeometry(5, 75);
+                const stripeMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.7 });
+                const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+                stripe.rotation.x = -Math.PI / 2;
+                stripe.position.set(i + 2.5, 0.01, 0);
+                stripe.receiveShadow = true;
+                stadiumGroup.add(stripe);
+            }
+
+            // Pitch Lines Canvas Texture
+            const lineCanvas = document.createElement('canvas');
+            lineCanvas.width = 1024;
+            lineCanvas.height = 680;
+            const ctx = lineCanvas.getContext('2d');
+
+            ctx.fillStyle = 'rgba(0,0,0,0)';
+            ctx.fillRect(0, 0, 1024, 680);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 6;
+
+            // Outer line
+            ctx.strokeRect(30, 30, 964, 620);
+            // Center line
+            ctx.beginPath();
+            ctx.moveTo(512, 30);
+            ctx.lineTo(512, 650);
+            ctx.stroke();
+            // Center circle
+            ctx.beginPath();
+            ctx.arc(512, 340, 90, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Penalty boxes
+            ctx.strokeRect(30, 180, 150, 320);
+            ctx.strokeRect(844, 180, 150, 320);
+
+            const pitchTexture = new THREE.CanvasTexture(lineCanvas);
+            const linesGeo = new THREE.PlaneGeometry(105, 68);
+            const linesMat = new THREE.MeshBasicMaterial({ map: pitchTexture, transparent: true, opacity: 0.9 });
+            const linesMesh = new THREE.Mesh(linesGeo, linesMat);
+            linesMesh.rotation.x = -Math.PI / 2;
+            linesMesh.position.y = 0.02;
+            stadiumGroup.add(linesMesh);
+
+            // 3D Goalposts
+            createGoalpost(-51);
+            createGoalpost(51);
+        }
+
+        function createGoalpost(xPos) {
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+            const postGeo = new THREE.CylinderGeometry(0.15, 0.15, 3.5);
+
+            const p1 = new THREE.Mesh(postGeo, frameMat);
+            p1.position.set(xPos, 1.75, -4);
+            const p2 = new THREE.Mesh(postGeo, frameMat);
+            p2.position.set(xPos, 1.75, 4);
+
+            const barGeo = new THREE.CylinderGeometry(0.15, 0.15, 8);
+            const bar = new THREE.Mesh(barGeo, frameMat);
+            bar.rotation.x = Math.PI / 2;
+            bar.position.set(xPos, 3.5, 0);
+
+            stadiumGroup.add(p1);
+            stadiumGroup.add(p2);
+            stadiumGroup.add(bar);
+        }
+
+        function buildDoubleTierStands() {
+            // Maracaná Continuous Oval Seating Bowl
+            const concreteMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
+
+            // Lower Tier (Anillo Inferior)
+            const lowerBowlGeo = new THREE.CylinderGeometry(72, 54, 12, 64, 1, true);
+            const lowerBowl = new THREE.Mesh(lowerBowlGeo, concreteMat);
+            lowerBowl.position.y = 6;
+            stadiumGroup.add(lowerBowl);
+
+            // Middle Concourse Ring
+            const concourseGeo = new THREE.RingGeometry(71, 76, 64);
+            const concourseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+            const concourse = new THREE.Mesh(concourseGeo, concourseMat);
+            concourse.rotation.x = -Math.PI / 2;
+            concourse.position.y = 12;
+            stadiumGroup.add(concourse);
+
+            // Upper Tier (Anillo Superior)
+            const upperBowlGeo = new THREE.CylinderGeometry(110, 76, 22, 64, 1, true);
+            const upperBowl = new THREE.Mesh(upperBowlGeo, concreteMat);
+            upperBowl.position.y = 23;
+            stadiumGroup.add(upperBowl);
+
+            // GENERATE 3D SEATS WITH STRICT 2-COLOR SYSTEM (GREEN/GRAY)
+            const seatGeo = new THREE.BoxGeometry(0.9, 0.8, 0.8);
+
+            // Lower Tier Seats
+            generateTierSeats(60, 70, 10, 6, 200, "Baja", seatGeo);
+            // Upper Tier Seats
+            generateTierSeats(78, 106, 16, 13, 320, "Alta", seatGeo);
+        }
+
+        function generateTierSeats(rMin, rMax, rows, startY, seatCount, tierName, seatGeo) {
+            const sectors = ["Norte", "Sur", "Leste", "Oeste"];
+
+            for (let i = 0; i < seatCount; i++) {
+                const fraction = i / seatCount;
+                const angle = fraction * Math.PI * 2;
+                const rowIdx = i % rows;
+                const r = rMin + (rowIdx / rows) * (rMax - rMin);
+                const h = startY + (rowIdx / rows) * 14.5;
+
+                // Oval distortion for classic Maracaná ellipse shape
+                const x = Math.cos(angle) * (r * 1.15);
+                const z = Math.sin(angle) * r;
+
+                // Strict 2-Color State Assignment
+                const isAvailable = Math.random() > 0.35; // 65% available (Green), 35% occupied (Gray)
+                const colorHex = isAvailable ? COLOR_AVAILABLE : COLOR_OCCUPIED;
+
+                const seatMat = new THREE.MeshStandardMaterial({
+                    color: colorHex,
+                    roughness: 0.5,
+                    metalness: 0.1
+                });
+
+                const seatMesh = new THREE.Mesh(seatGeo, seatMat);
+                seatMesh.position.set(x, h + 0.4, z);
+                seatMesh.lookAt(0, h, 0); // Face the pitch center
+                seatMesh.castShadow = true;
+
+                // Technical Isoptic calculations
+                const distToCenter = Math.sqrt(x * x + z * z).toFixed(1);
+                const cValue = (0.09 + Math.random() * 0.05).toFixed(3);
+                const priceCOP = Math.round(140000 + 18000 * h);
+                const quality = Math.min(99, Math.round(100 - (distToCenter / 120) * 20)).toFixed(1);
+
+                const sectorName = sectors[Math.floor((angle / (Math.PI * 2)) * 4)];
+                const seatCode = `MAR-${tierName}-${sectorName.charAt(0)}${rowIdx + 1}-${(i % 99) + 1}`;
+
+                // Metadata binding
+                const seatData = {
+                    id: i,
+                    code: seatCode,
+                    tier: tierName,
+                    sector: sectorName,
+                    row: rowIdx + 1,
+                    number: (i % 99) + 1,
+                    height: h.toFixed(2),
+                    cValue: cValue,
+                    distance: distToCenter,
+                    quality: quality,
+                    price: priceCOP,
+                    available: isAvailable,
+                    mesh: seatMesh
+                };
+
+                seatMesh.userData = seatData;
+                seatsGroup.add(seatMesh);
+                seatMeshes.push(seatMesh);
+                seatDataList.push(seatData);
+            }
+        }
+
+        function buildStructuralColumnsAndRing() {
+            // Outer Ring Compression Beam
+            const ringGeo = new THREE.TorusGeometry(112, 2.5, 16, 64);
+            const concreteMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.4 });
+            const ringMesh = new THREE.Mesh(ringGeo, concreteMat);
+            ringMesh.rotation.x = Math.PI / 2;
+            ringMesh.position.y = 34;
+            stadiumGroup.add(ringMesh);
+
+            // 60 Classic Maracaná Y-Shaped Concrete Columns
+            const colCount = 60;
+            const radius = 112;
+
+            for (let i = 0; i < colCount; i++) {
+                const angle = (i / colCount) * Math.PI * 2;
+                const x = Math.cos(angle) * (radius * 1.15);
+                const z = Math.sin(angle) * radius;
+
+                // Main vertical stem
+                const colGeo = new THREE.CylinderGeometry(1.2, 1.8, 32, 8);
+                const col = new THREE.Mesh(colGeo, concreteMat);
+                col.position.set(x, 16, z);
+                col.castShadow = true;
+                stadiumGroup.add(col);
+
+                // Y-fork branches
+                const branchGeo = new THREE.CylinderGeometry(0.8, 1.1, 7, 8);
+                const b1 = new THREE.Mesh(branchGeo, concreteMat);
+                b1.position.set(x + Math.cos(angle + 0.1) * 2, 32, z + Math.sin(angle + 0.1) * 2);
+                b1.rotation.z = 0.2;
+                stadiumGroup.add(b1);
+            }
+        }
+
+        function buildRoofMembraneAndCables() {
+            // Tension inner ring
+            const innerRingGeo = new THREE.TorusGeometry(74, 1.2, 12, 64);
+            const steelMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
+            const innerRing = new THREE.Mesh(innerRingGeo, steelMat);
+            innerRing.rotation.x = Math.PI / 2;
+            innerRing.position.y = 31;
+            roofGroup.add(innerRing);
+
+            // Cable spokes connecting outer compression ring to inner ring
+            const cableCount = 60;
+            const cableMat = new THREE.LineBasicMaterial({ color: 0xd1d5db, linewidth: 2 });
+
+            for (let i = 0; i < cableCount; i++) {
+                const angle = (i / cableCount) * Math.PI * 2;
+                const xOuter = Math.cos(angle) * (112 * 1.15);
+                const zOuter = Math.sin(angle) * 112;
+                const xInner = Math.cos(angle) * (74 * 1.15);
+                const zInner = Math.sin(angle) * 74;
+
+                const points = [
+                    new THREE.Vector3(xOuter, 34, zOuter),
+                    new THREE.Vector3(xInner, 31, zInner)
+                ];
+                const cableGeo = new THREE.BufferGeometry().setFromPoints(points);
+                const cableLine = new THREE.Line(cableGeo, cableMat);
+                roofGroup.add(cableLine);
+            }
+
+            // PTFE Membrane Roof Surface (Translucent Ring)
+            const membraneGeo = new THREE.RingGeometry(74, 114, 64);
+            const membraneMat = new THREE.MeshStandardMaterial({
+                color: 0xf8fafc,
+                roughness: 0.3,
+                transparent: true,
+                opacity: 0.82,
+                side: THREE.DoubleSide
+            });
+            const membrane = new THREE.Mesh(membraneGeo, membraneMat);
+            membrane.rotation.x = -Math.PI / 2;
+            membrane.position.y = 33.5;
+            roofGroup.add(membrane);
+        }
+
+        function buildParkingLotsAndCars() {
+            // RULE 1 IMPLEMENTATION: STRICTLY DELIMITED ASPHALT PARKING ZONES WITH PAINTED BAYS
+            
+            // 1. NORTH PARKING ZONE
+            createParkingZone(120, -10, 0, 70, 110, "NORTE");
+
+            // 2. SOUTH/WEST PARKING ZONE
+            createParkingZone(-120, -10, 0, 70, 110, "SUR-OESTE");
+        }
+
+        function createParkingZone(centerX, centerY, centerZ, width, length, zoneName) {
+            // Asphalt Ground Slab
+            const asphaltGeo = new THREE.BoxGeometry(width, 0.4, length);
+            const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.95 });
+            const asphalt = new THREE.Mesh(asphaltGeo, asphaltMat);
+            asphalt.position.set(centerX, 0.1, centerZ);
+            asphalt.receiveShadow = true;
+            carsGroup.add(asphalt);
+
+            // Painted White Lines for Parking Bays Canvas Texture
+            const pCanvas = document.createElement('canvas');
+            pCanvas.width = 512;
+            pCanvas.height = 512;
+            const pCtx = pCanvas.getContext('2d');
+
+            pCtx.fillStyle = '#1e293b';
+            pCtx.fillRect(0, 0, 512, 512);
+
+            pCtx.strokeStyle = '#ffffff';
+            pCtx.lineWidth = 8;
+
+            const cols = 5;
+            const rows = 12;
+            const cellW = 512 / cols;
+            const cellH = 512 / rows;
+
+            // Draw Parking Cell Grid
+            for (let c = 0; c < cols; c++) {
+                for (let r = 0; r < rows; r++) {
+                    pCtx.strokeRect(c * cellW + 4, r * cellH + 4, cellW - 8, cellH - 8);
+                }
+            }
+
+            const parkingTexture = new THREE.CanvasTexture(pCanvas);
+            const markGeo = new THREE.PlaneGeometry(width - 4, length - 4);
+            const markMat = new THREE.MeshBasicMaterial({ map: parkingTexture, transparent: true, opacity: 0.9 });
+            const markMesh = new THREE.Mesh(markGeo, markMat);
+            markMesh.rotation.x = -Math.PI / 2;
+            markMesh.position.set(centerX, 0.32, centerZ);
+            carsGroup.add(markMesh);
+
+            // PARK CARS PERFECTLY ALIGNED INSIDE MARKED CELLS ONLY
+            const carColors = [0xef4444, 0x3b82f6, 0xf59e0b, 0x64748b, 0xf8fafc, 0x0f172a, 0x10b981];
+
+            const startX = centerX - width / 2 + cellW * (width / 512) / 2 + 3;
+            const startZ = centerZ - length / 2 + cellH * (length / 512) / 2 + 2;
+
+            const stepX = (width - 8) / cols;
+            const stepZ = (length - 8) / rows;
+
+            for (let c = 0; c < cols; c++) {
+                for (let r = 0; r < rows; r++) {
+                    // 80% occupancy to leave some open parking stalls
+                    if (Math.random() < 0.8) {
+                        const px = startX + c * stepX;
+                        const pz = startZ + r * stepZ;
+
+                        // Align car exactly inside the bay cell rectangle
+                        const colorHex = carColors[Math.floor(Math.random() * carColors.length)];
+                        createDetailedCar(px, 0.35, pz, colorHex, (r % 2 === 0) ? 0 : Math.PI);
+                    }
+                }
+            }
+        }
+
+        function createDetailedCar(x, y, z, colorHex, yawAngle) {
+            const car = new THREE.Group();
+
+            // Main Car Body Chassis
+            const bodyGeo = new THREE.BoxGeometry(2.4, 1.1, 4.8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.5 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.8;
+            body.castShadow = true;
+            car.add(body);
+
+            // Car Roof / Cabin
+            const cabinGeo = new THREE.BoxGeometry(2.1, 0.9, 2.6);
+            const cabin = new THREE.Mesh(cabinGeo, bodyMat);
+            cabin.position.set(0, 1.6, -0.2);
+            cabin.castShadow = true;
+            car.add(cabin);
+
+            // Tinted Windshield Glass
+            const glassGeo = new THREE.BoxGeometry(2.0, 0.8, 2.4);
+            const glassMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.7 });
+            const glass = new THREE.Mesh(glassGeo, glassMat);
+            glass.position.set(0, 1.62, -0.2);
+            car.add(glass);
+
+            // 4 Black Rubber Wheels
+            const wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.35, 12);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.9 });
+
+            const wPositions = [
+                [-1.15, 0.45, 1.4],
+                [1.15, 0.45, 1.4],
+                [-1.15, 0.45, -1.4],
+                [1.15, 0.45, -1.4]
+            ];
+
+            wPositions.forEach(pos => {
+                const w = new THREE.Mesh(wheelGeo, wheelMat);
+                w.rotation.z = Math.PI / 2;
+                w.position.set(pos[0], pos[1], pos[2]);
+                w.castShadow = true;
+                car.add(w);
+            });
+
+            // Bright Headlights
+            const lightGeo = new THREE.BoxGeometry(0.4, 0.2, 0.1);
+            const headMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+            const h1 = new THREE.Mesh(lightGeo, headMat);
+            h1.position.set(-0.8, 0.9, 2.42);
+            const h2 = new THREE.Mesh(lightGeo, headMat);
+            h2.position.set(0.8, 0.9, 2.42);
+            car.add(h1);
+            car.add(h2);
+
+            // Tail Lights
+            const tailMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+            const t1 = new THREE.Mesh(lightGeo, tailMat);
+            t1.position.set(-0.8, 0.9, -2.42);
+            const t2 = new THREE.Mesh(lightGeo, tailMat);
+            t2.position.set(0.8, 0.9, -2.42);
+            car.add(t1);
+            car.add(t2);
+
+            car.position.set(x, y, z);
+            car.rotation.y = yawAngle;
+            carsGroup.add(car);
+        }
+
+        function buildExteriorFoodTrucks() {
+            const count = 10;
+            const radius = 138;
+
+            for (let i = 0; i < count; i++) {
+                const angle = (i / count) * Math.PI * 2;
+                const x = Math.cos(angle) * (radius * 1.12);
+                const z = Math.sin(angle) * radius;
+
+                // Avoid blocking parking entrances
+                if ((x > 60 && x < 180) || (x < -60 && x > -180)) continue;
+
+                createFoodTruck(x, 0, z, angle + Math.PI / 2);
+            }
+        }
+
+        function createFoodTruck(x, y, z, rotation) {
+            const truck = new THREE.Group();
+
+            // Truck Body Box
+            const bodyGeo = new THREE.BoxGeometry(3.2, 2.2, 5.5);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 1.4;
+            truck.add(body);
+
+            // Striped Awning Toldo
+            const awningGeo = new THREE.BoxGeometry(3.4, 0.2, 2.0);
+            const awningMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.5 });
+            const awning = new THREE.Mesh(awningGeo, awningMat);
+            awning.position.set(0, 2.3, 1.8);
+            awning.rotation.x = 0.2;
+            truck.add(awning);
+
+            // Warm Ambient Point Light
+            const light = new THREE.PointLight(0xfba518, 1.2, 18);
+            light.position.set(0, 2.5, 2.2);
+            truck.add(light);
+
+            truck.position.set(x, y, z);
+            truck.rotation.y = rotation;
+            kiosksGroup.add(truck);
+        }
+
+        function build2DSeatMatrixUI() {
+            const grid = document.getElementById('seat-matrix-grid');
+            grid.innerHTML = '';
+
+            // Render first 80 representative seats in 2D matrix
+            const sampleSeats = seatDataList.slice(0, 80);
+
+            sampleSeats.forEach(data => {
+                const btn = document.createElement('button');
+                btn.className = `w-full h-6 rounded text-[9px] font-bold transition flex items-center justify-center ${
+                    data.available ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950' : 'bg-slate-600 text-slate-400 cursor-not-allowed'
+                }`;
+                btn.innerText = data.number;
+                btn.title = `${data.code} - ${data.available ? 'Disponible' : 'Ocupado'}`;
+                btn.onclick = () => selectSeatByData(data);
+                grid.appendChild(btn);
+            });
+        }
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function setupInteractions() {
+            const container = document.getElementById('three-container');
+            const tooltip = document.getElementById('seat-tooltip');
+
+            container.addEventListener('mousemove', (e) => {
+                const rect = container.getBoundingClientRect();
+                mouse.x = ((e.clientX - rect.left) / container.clientWidth) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / container.clientHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(seatMeshes);
+
+                if (intersects.length > 0) {
+                    const mesh = intersects[0].object;
+                    const data = mesh.userData;
+
+                    tooltip.style.left = `${e.clientX - rect.left + 15}px`;
+                    tooltip.style.top = `${e.clientY - rect.top - 15}px`;
+                    tooltip.classList.remove('hidden');
+
+                    document.getElementById('tooltip-code').innerText = data.code;
+                    document.getElementById('tooltip-price').innerText = `$ ${data.price.toLocaleString('es-CO')} COP`;
+                    document.getElementById('tooltip-status').innerText = data.available ? 'VERDE: DISPONIBLE' : 'GRIS: OCUPADO';
+                    document.getElementById('tooltip-status').className = data.available ? 'text-[9px] font-bold text-emerald-400' : 'text-[9px] font-bold text-slate-400';
+                } else {
+                    tooltip.classList.add('hidden');
+                }
+            });
+
+            container.addEventListener('click', (e) => {
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(seatMeshes);
+
+                if (intersects.length > 0) {
+                    const data = intersects[0].object.userData;
+                    selectSeatByData(data);
+                }
+            });
+        }
+
+        function selectSeatByData(data) {
+            // Restore previous selected seat mesh color if applicable
+            if (selectedSeatMesh) {
+                const prevData = selectedSeatMesh.userData;
+                selectedSeatMesh.material.color.setHex(prevData.available ? COLOR_AVAILABLE : COLOR_OCCUPIED);
+            }
+
+            selectedSeatData = data;
+            selectedSeatMesh = data.mesh;
+
+            // Highlight newly selected seat
+            if (selectedSeatMesh) {
+                selectedSeatMesh.material.color.setHex(COLOR_SELECTED);
+            }
+
+            // Update UI Details Card
+            document.getElementById('card-seat-code').innerText = data.code;
+            document.getElementById('card-seat-h').innerText = `+${data.height} m`;
+            document.getElementById('card-seat-c').innerText = `${data.cValue} m (C >= 0.09m)`;
+            document.getElementById('card-seat-dist').innerText = `${data.distance} m`;
+            document.getElementById('card-seat-quality').innerText = `${data.quality} %`;
+            document.getElementById('card-seat-price').innerText = `$ ${data.price.toLocaleString('es-CO')} COP`;
+
+            const statusBadge = document.getElementById('card-seat-status');
+            const buyBtn = document.getElementById('buy-seat-btn');
+
+            if (data.available) {
+                statusBadge.innerText = 'DISPONIBLE';
+                statusBadge.className = 'px-2 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+                buyBtn.innerText = 'COMPRAR ASIENTO';
+                buyBtn.className = 'px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition';
+                buyBtn.disabled = false;
+            } else {
+                statusBadge.innerText = 'OCUPADO';
+                statusBadge.className = 'px-2 py-1 rounded text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600';
+                buyBtn.innerText = 'LIBERAR ASIENTO';
+                buyBtn.className = 'px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 font-extrabold text-xs rounded-xl transition';
+                buyBtn.disabled = false;
+            }
+
+            // Switch to seat tab automatically
+            switchTab('tab-seats');
+        }
+
+        function toggleSeatPurchase() {
+            if (!selectedSeatData) return;
+
+            if (selectedSeatData.available) {
+                // Check wallet funds
+                if (walletBalance < selectedSeatData.price) {
+                    alert("Saldo insuficiente en billetera.");
+                    return;
+                }
+
+                walletBalance -= selectedSeatData.price;
+                selectedSeatData.available = false;
+                selectedSeatMesh.material.color.setHex(COLOR_OCCUPIED);
+            } else {
+                // Refund
+                walletBalance += selectedSeatData.price;
+                selectedSeatData.available = true;
+                selectedSeatMesh.material.color.setHex(COLOR_AVAILABLE);
+            }
+
+            // Update Wallet UI
+            document.getElementById('wallet-balance').innerText = `$ ${walletBalance.toLocaleString('es-CO')} COP`;
+
+            // Refresh UI card
+            selectSeatByData(selectedSeatData);
+            build2DSeatMatrixUI();
+        }
+
+        function toggleRoof() {
+            isRoofVisible = !isRoofVisible;
+            roofGroup.visible = isRoofVisible;
+
+            const text = isRoofVisible ? 'VISIBLE' : 'OCULTO';
+            document.getElementById('roof-status-text').innerText = text;
+            document.getElementById('hud-roof-text').innerText = text;
+
+            const icon = document.getElementById('roof-icon');
+            icon.className = isRoofVisible ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+        }
+
+        function setCameraView(preset) {
+            if (preset === 'overview') {
+                animateCameraTo(160, 110, 220, 0, 10, 0);
+            } else if (preset === 'pitch') {
+                animateCameraTo(0, 3, 20, 0, 3, 0);
+            } else if (preset === 'parking') {
+                animateCameraTo(160, 45, 20, 120, 0, 0); // Zoom into North Parking
+            } else if (preset === 'corcovado') {
+                animateCameraTo(-180, 80, -100, -250, 120, -190);
+            }
+        }
+
+        function animateCameraTo(cx, cy, cz, tx, ty, tz) {
+            let step = 0;
+            const startPos = camera.position.clone();
+            const startTarget = controls.target.clone();
+
+            const endPos = new THREE.Vector3(cx, cy, cz);
+            const endTarget = new THREE.Vector3(tx, ty, tz);
+
+            function loop() {
+                step += 0.04;
+                if (step <= 1) {
+                    camera.position.lerpVectors(startPos, endPos, step);
+                    controls.target.lerpVectors(startTarget, endTarget, step);
+                    controls.update();
+                    requestAnimationFrame(loop);
+                }
+            }
+            loop();
+        }
+
+        function resetCamera() {
+            setCameraView('overview');
+        }
+
+        function updateTimeOfDay(val) {
+            const hour = parseFloat(val);
+            document.getElementById('time-display').innerText = `${Math.floor(hour)}:${hour % 1 === 0 ? '00' : '30'} ${hour >= 12 ? 'PM' : 'AM'}`;
+
+            const angle = ((hour - 6) / 16) * Math.PI;
+            dirLight.position.x = Math.cos(angle) * 200;
+            dirLight.position.y = Math.sin(angle) * 200;
+
+            if (hour >= 18.5 || hour < 6.5) {
+                // Night mode
+                scene.background.setHex(0x020617);
+                scene.fog.color.setHex(0x020617);
+                dirLight.intensity = 0.2;
+            } else {
+                // Day / Golden hour
+                scene.background.setHex(0x0a0f1d);
+                scene.fog.color.setHex(0x0a0f1d);
+                dirLight.intensity = 1.4;
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            const tabs = ['tab-3d', 'tab-seats', 'tab-bim', 'tab-exterior'];
+            tabs.forEach(id => {
+                const btn = document.getElementById(`btn-${id}`);
+                if (id === tabId) {
+                    btn.className = "py-2.5 rounded-lg text-emerald-400 bg-slate-800 shadow transition flex flex-col items-center gap-1 font-bold";
+                } else {
+                    btn.className = "py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition flex flex-col items-center gap-1 font-normal";
+                }
+            });
+        }
+
+        function initChartJS() {
+            const ctx = document.getElementById('cableChart').getContext('2d');
+
+            const xVals = [];
+            const yVals = [];
+            for (let x = -38; x <= 38; x += 2) {
+                xVals.push(x);
+                // Parabola: y(x) = (4*f / L^2) * x^2
+                const sag = (4 * 3.2 / (76 * 76)) * (x * x);
+                yVals.push((34 - sag).toFixed(2));
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: xVals,
+                    datasets: [{
+                        label: 'Perfil Cable Techo (m)',
+                        data: yVals,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                    }
+                }
+            });
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('three-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Start initialization on load
+        window.onload = function() {
+            init3D();
+            initChartJS();
+        };
+    </script>
+</body>
+</html>
