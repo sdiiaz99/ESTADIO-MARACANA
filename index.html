@@ -1,1272 +1,1526 @@
 <!DOCTYPE html>
 <html lang="es" class="h-full bg-slate-950 text-slate-100">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estadio Maracaná - BIM & Visualización 3D Paramétrica</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Three.js & OrbitControls -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        rio: { blue: '#0284c7', green: '#10b981', gold: '#f59e0b', dark: '#0f172a' }
-                    }
-                }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estadio Maracaná - Visualizador Paramétrico 3D & Marketplace BIM</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            maracana: {
+              emerald: '#10b981',
+              slate: '#64748b',
+              gold: '#f59e0b',
+              pitch: '#15803d',
+              asphalt: '#1e293b'
             }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif']
+          }
         }
-    </script>
-    <style>
-        /* Custom scrollbar and canvas styling */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .glow-green { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-        .glow-blue { box-shadow: 0 0 15px rgba(2, 132, 199, 0.4); }
-    </style>
+      }
+    }
+  </script>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Three.js & OrbitControls Libraries CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      user-select: none;
+    }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #10b981;
+    }
+
+    /* Canvas styling */
+    #canvas-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 520px;
+      background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+    }
+
+    /* Glassmorphism UI panel */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
 </head>
-<body class="h-full flex flex-col font-sans overflow-hidden select-none bg-slate-950 text-slate-100">
+<body class="h-full flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-emerald-500 selection:text-slate-900">
 
-    <!-- HEADER BAR -->
-    <header class="h-16 bg-slate-900/90 border-b border-slate-800 px-4 flex items-center justify-between z-20 shrink-0">
-        <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-sky-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                <i class="fa-solid font-bold text-slate-950 text-xl fa-stadium"></i>
-            </div>
-            <div>
-                <h1 class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-emerald-400 via-sky-300 to-amber-300 bg-clip-text text-transparent">
-                    ESTADIO MARACANÁ 3D
-                </h1>
-                <p class="text-xs text-slate-400">Diseño Paramétrico BIM, Isóptica & Entorno Urbano Rio 2026</p>
-            </div>
-        </div>
-
-        <!-- Wallet and Quick Info Stats -->
-        <div class="flex items-center space-x-4">
-            <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5 flex items-center space-x-2">
-                <i class="fa-solid fa-wallet text-emerald-400"></i>
-                <div class="text-xs">
-                    <div class="text-slate-400 text-[10px] uppercase font-bold">Billetera Usuario</div>
-                    <div id="wallet-balance" class="font-mono font-bold text-emerald-400">$ 5.000.000 COP</div>
-                </div>
-            </div>
-
-            <div class="hidden md:flex bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5 items-center space-x-3">
-                <div class="text-xs text-right">
-                    <span class="text-slate-400 block text-[10px] font-bold">CAPACIDAD BIM</span>
-                    <span class="font-bold text-slate-200">78,838 Asientos</span>
-                </div>
-                <div class="h-6 w-px bg-slate-700"></div>
-                <div class="text-xs">
-                    <span class="text-slate-400 block text-[10px] font-bold">ESTADO CABLES</span>
-                    <span class="font-bold text-amber-400"><i class="fa-solid fa-check-circle mr-1"></i>850 kN</span>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- MAIN WRAPPER -->
-    <div class="flex-1 flex overflow-hidden relative">
-
-        <!-- LEFT CONTROL PANEL / TABS -->
-        <aside class="w-full md:w-96 bg-slate-900/95 border-r border-slate-800 flex flex-col z-10 shrink-0 transition-all duration-300" id="sidebar">
-            <!-- TAB BUTTONS -->
-            <div class="grid grid-cols-4 bg-slate-950/80 p-1 border-b border-slate-800 text-xs font-semibold">
-                <button onclick="switchTab('tab-3d')" id="btn-tab-3d" class="py-2.5 rounded-lg text-emerald-400 bg-slate-800 shadow transition flex flex-col items-center gap-1">
-                    <i class="fa-solid fa-cube text-sm"></i>
-                    <span>Vista 3D</span>
-                </button>
-                <button onclick="switchTab('tab-seats')" id="btn-tab-seats" class="py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition flex flex-col items-center gap-1">
-                    <i class="fa-solid fa-chair text-sm"></i>
-                    <span>Asientos</span>
-                </button>
-                <button onclick="switchTab('tab-bim')" id="btn-tab-bim" class="py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition flex flex-col items-center gap-1">
-                    <i class="fa-solid fa-calculator text-sm"></i>
-                    <span>BIM & Math</span>
-                </button>
-                <button onclick="switchTab('tab-exterior')" id="btn-tab-exterior" class="py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition flex flex-col items-center gap-1">
-                    <i class="fa-solid fa-car text-sm"></i>
-                    <span>Entorno</span>
-                </button>
-            </div>
-
-            <!-- TAB CONTENT CONTAINER -->
-            <div class="flex-1 overflow-y-auto p-4 space-y-5 text-sm">
-
-                <!-- TAB 1: 3D CONTROLS -->
-                <div id="tab-3d" class="tab-content space-y-4">
-                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
-                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider flex items-center justify-between">
-                            <span><i class="fa-solid fa-sliders text-emerald-400 mr-2"></i>Controles del Techo y Estructura</span>
-                        </h3>
-                        <div class="flex items-center justify-between bg-slate-900/80 p-3 rounded-lg border border-slate-700">
-                            <div>
-                                <div class="font-semibold text-slate-200">Cubierta PTFE & Cables</div>
-                                <div class="text-xs text-slate-400">Membrana reticular tensionada</div>
-                            </div>
-                            <button id="toggle-roof-btn" onclick="toggleRoof()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow transition flex items-center gap-1.5">
-                                <i class="fa-solid fa-eye" id="roof-icon"></i>
-                                <span id="roof-status-text">VISIBLE</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
-                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">
-                            <i class="fa-solid fa-camera text-sky-400 mr-2"></i>Perspectivas de Cámara
-                        </h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button onclick="setCameraView('overview')" class="p-2 bg-slate-900/90 hover:bg-slate-800 rounded-lg text-xs font-medium border border-slate-700 text-left flex items-center gap-2">
-                                <i class="fa-solid fa-globe text-sky-400"></i> Panorámica
-                            </button>
-                            <button onclick="setCameraView('pitch')" class="p-2 bg-slate-900/90 hover:bg-slate-800 rounded-lg text-xs font-medium border border-slate-700 text-left flex items-center gap-2">
-                                <i class="fa-solid fa-futbol text-emerald-400"></i> Nivel Cancha
-                            </button>
-                            <button onclick="setCameraView('parking')" class="p-2 bg-slate-900/90 hover:bg-slate-800 rounded-lg text-xs font-medium border border-slate-700 text-left flex items-center gap-2">
-                                <i class="fa-solid fa-square-parking text-amber-400"></i> Parqueaderos
-                            </button>
-                            <button onclick="setCameraView('corcovado')" class="p-2 bg-slate-900/90 hover:bg-slate-800 rounded-lg text-xs font-medium border border-slate-700 text-left flex items-center gap-2">
-                                <i class="fa-solid fa-mountain text-purple-400"></i> Vista Rio & Cristo
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
-                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">
-                            <i class="fa-solid fa-sun text-amber-400 mr-2"></i>Iluminación y Hora del Día
-                        </h3>
-                        <div class="space-y-2">
-                            <div class="flex justify-between text-xs text-slate-400">
-                                <span>Simulación Solar</span>
-                                <span id="time-display" class="font-mono text-amber-300">16:30 PM (Atardecer Rio)</span>
-                            </div>
-                            <input type="range" id="time-slider" min="6" max="22" step="0.5" value="16.5" oninput="updateTimeOfDay(this.value)" class="w-full accent-amber-400 bg-slate-900 rounded-lg h-2">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB 2: SEAT MARKET -->
-                <div id="tab-seats" class="tab-content hidden space-y-4">
-                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
-                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider flex justify-between items-center">
-                            <span><i class="fa-solid fa-shop text-emerald-400 mr-2"></i>Leyenda Estricta de 2 Colores</span>
-                        </h3>
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <div class="flex items-center space-x-2 bg-slate-900/80 p-2 rounded-lg border border-emerald-500/30">
-                                <span class="w-4 h-4 rounded-full bg-emerald-500 inline-block shadow shadow-emerald-500/50"></span>
-                                <span class="font-medium text-emerald-300">VERDE: Disponible</span>
-                            </div>
-                            <div class="flex items-center space-x-2 bg-slate-900/80 p-2 rounded-lg border border-slate-600">
-                                <span class="w-4 h-4 rounded-full bg-slate-500 inline-block"></span>
-                                <span class="font-medium text-slate-400">GRIS: Ocupado</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 2D SEAT MATRIX PREVIEW -->
-                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">Matriz Interactiva de Secciones</h3>
-                            <span class="text-[10px] bg-sky-950 text-sky-300 px-2 py-0.5 rounded border border-sky-800">Haz clic en un punto</span>
-                        </div>
-                        <div id="seat-matrix-grid" class="grid grid-cols-10 gap-1 bg-slate-950 p-2 rounded-xl border border-slate-800 max-h-48 overflow-y-auto">
-                            <!-- Populated via JS -->
-                        </div>
-                    </div>
-
-                    <!-- SELECTED SEAT DETAILS CARD -->
-                    <div id="selected-seat-card" class="bg-gradient-to-br from-slate-900 to-slate-800 p-4 rounded-xl border border-emerald-500/40 space-y-3 shadow-xl">
-                        <div class="flex items-center justify-between border-b border-slate-700 pb-2">
-                            <div>
-                                <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Asiento Seleccionado</span>
-                                <div id="card-seat-code" class="text-base font-extrabold text-white">MAR-Baja-N12-045</div>
-                            </div>
-                            <span id="card-seat-status" class="px-2 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                                DISPONIBLE
-                            </span>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
-                                <span class="text-slate-400 text-[10px] block">Cota de Elevación (+h)</span>
-                                <span id="card-seat-h" class="font-mono font-bold text-slate-200">+12.45 m</span>
-                            </div>
-                            <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
-                                <span class="text-slate-400 text-[10px] block">Isóptica Catenaria (C)</span>
-                                <span id="card-seat-c" class="font-mono font-bold text-sky-400">0.125 m (Cumple)</span>
-                            </div>
-                            <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
-                                <span class="text-slate-400 text-[10px] block">Distancia Focal</span>
-                                <span id="card-seat-dist" class="font-mono font-bold text-slate-200">42.8 m</span>
-                            </div>
-                            <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
-                                <span class="text-slate-400 text-[10px] block">Calidad de Vista</span>
-                                <span id="card-seat-quality" class="font-mono font-bold text-amber-400">94.2 %</span>
-                            </div>
-                        </div>
-
-                        <div class="bg-slate-950/90 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
-                            <div>
-                                <span class="text-[10px] text-slate-400 block font-semibold">PRECIO DE TICKET P(h)</span>
-                                <div id="card-seat-price" class="text-lg font-black text-emerald-400 font-mono">$ 364.100 COP</div>
-                            </div>
-                            <button id="buy-seat-btn" onclick="toggleSeatPurchase()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition">
-                                COMPRAR ASIENTO
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB 3: BIM & MATHEMATICS -->
-                <div id="tab-bim" class="tab-content hidden space-y-4">
-                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
-                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">
-                            <i class="fa-solid fa-chart-line text-amber-400 mr-2"></i>Ecuación Cuadrática: Parabóla de Cables del Techo
-                        </h3>
-                        <p class="text-xs text-slate-400">
-                            Modelo tensión-flecha: <span class="font-mono text-amber-300">y(x) = (4f/L²)·x²</span>. Tensión máxima en anillo: <span class="font-mono text-emerald-400">T_máx = 960 kN</span>.
-                        </p>
-                        <div class="h-44 w-full bg-slate-950 p-2 rounded-xl border border-slate-800">
-                            <canvas id="cableChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
-                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">
-                            <i class="fa-solid fa-cubes text-sky-400 mr-2"></i>Cálculo Decimal BIM & Estructura Pre fabricada
-                        </h3>
-                        <div class="space-y-2 text-xs">
-                            <div class="flex justify-between p-2 bg-slate-900/80 rounded border border-slate-800">
-                                <span class="text-slate-400">Volumen Concreto Tribunas:</span>
-                                <span class="font-mono font-bold text-slate-200">42,850.75 m³</span>
-                            </div>
-                            <div class="flex justify-between p-2 bg-slate-900/80 rounded border border-slate-800">
-                                <span class="text-slate-400">60 Columnas Estr. en Y:</span>
-                                <span class="font-mono font-bold text-slate-200">12,480.00 m³</span>
-                            </div>
-                            <div class="flex justify-between p-2 bg-slate-900/80 rounded border border-slate-800">
-                                <span class="text-slate-400">Área Membrana PTFE:</span>
-                                <span class="font-mono font-bold text-sky-400">45,700.50 m²</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB 4: EXTERIOR & PARKING -->
-                <div id="tab-exterior" class="tab-content hidden space-y-4">
-                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
-                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider flex items-center justify-between">
-                            <span><i class="fa-solid fa-square-parking text-amber-400 mr-2"></i>Parqueaderos Asfaltados</span>
-                            <span class="text-[10px] bg-emerald-900 text-emerald-300 px-2 py-0.5 rounded">Alineación Estricta</span>
-                        </h3>
-                        <p class="text-xs text-slate-300">
-                            Zonas de parqueo del Norte y Sur/Oeste totalmente delimitadas sobre planchas asfaltadas de alta resistencia con celdas pintadas.
-                        </p>
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                                <div class="text-slate-400 text-[10px]">Sector Norte</div>
-                                <div class="font-bold text-emerald-400">60 Puestos Marcados</div>
-                                <div class="text-[10px] text-slate-500">Autos alineados 100%</div>
-                            </div>
-                            <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                                <div class="text-slate-400 text-[10px]">Sector Sur / Oeste</div>
-                                <div class="font-bold text-emerald-400">60 Puestos Marcados</div>
-                                <div class="text-[10px] text-slate-500">Demarcación blanca</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
-                        <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">
-                            <i class="fa-solid fa-utensils text-rose-400 mr-2"></i>Food Trucks y Kioscos Exteriores
-                        </h3>
-                        <p class="text-xs text-slate-300">
-                            Puntos de comida rápida distribuidos radialmente en la explanada peatonal (concourse) exterior con toldos de colores e iluminación cálida.
-                        </p>
-                        <div class="space-y-1.5 text-xs">
-                            <div class="flex items-center space-x-2 text-slate-300">
-                                <i class="fa-solid fa-burger text-amber-400 w-4"></i>
-                                <span>8 Food Trucks con zonas de atención</span>
-                            </div>
-                            <div class="flex items-center space-x-2 text-slate-300">
-                                <i class="fa-solid fa-store text-sky-400 w-4"></i>
-                                <span>12 Kioscos de bebidas y souvenirs Maracaná</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </aside>
-
-        <!-- 3D VIEWPORT CONTAINER -->
-        <main class="flex-1 relative h-full bg-slate-950 overflow-hidden">
-            <div id="three-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
-
-            <!-- OVERLAY HUD BUTTONS -->
-            <div class="absolute top-4 left-4 z-10 flex items-center space-x-2">
-                <button onclick="toggleRoof()" class="glass-panel hover:bg-slate-800 px-3 py-2 rounded-xl text-xs font-bold text-emerald-400 border border-emerald-500/30 shadow-lg flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group"></i>
-                    <span>Techo: <span id="hud-roof-text">VISIBLE</span></span>
-                </button>
-                <div class="glass-panel px-3 py-2 rounded-xl text-xs font-bold text-slate-300 border border-slate-700 hidden sm:flex items-center gap-2">
-                    <i class="fa-solid fa-eye text-sky-400"></i>
-                    <span id="hud-mode-text">Modo: Exploración 3D</span>
-                </div>
-            </div>
-
-            <!-- HOVER TOOLTIP CARD -->
-            <div id="seat-tooltip" class="absolute hidden pointer-events-none z-30 glass-panel p-2.5 rounded-xl border border-emerald-500/50 text-xs shadow-2xl transition-opacity duration-150">
-                <div class="font-bold text-emerald-400" id="tooltip-code">MAR-000</div>
-                <div class="text-[10px] text-slate-300" id="tooltip-price">$ 0 COP</div>
-                <div class="text-[9px] text-slate-400" id="tooltip-status">DISPONIBLE</div>
-            </div>
-
-            <!-- CAMERA HELPER CONTROLS HUD -->
-            <div class="absolute bottom-4 right-4 z-10 flex items-center space-x-2">
-                <button onclick="resetCamera()" class="glass-panel hover:bg-slate-800 p-2.5 rounded-xl text-slate-300 border border-slate-700 shadow-lg text-xs" title="Resetear Cámara">
-                    <i class="fa-solid fa-rotate-right"></i>
-                </button>
-            </div>
-        </main>
+  <!-- HEADER / NAVIGATION BAR -->
+  <header class="w-full bg-slate-900/90 border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between z-30 sticky top-0 backdrop-blur-md">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-emerald-500/20">
+        M
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+          ESTADIO MARACANÁ 
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">B.I.M. 3D</span>
+        </h1>
+        <p class="text-xs text-slate-400">Río de Janeiro, Brasil | Diseño Paramétrico & Marketplace Sostenible</p>
+      </div>
     </div>
 
-    <script>
-        let scene, camera, renderer, controls;
-        let roofGroup, stadiumGroup, carsGroup, kiosksGroup, landscapeGroup, seatsGroup;
-        let selectedSeatMesh = null;
-        let selectedSeatData = null;
-        let isRoofVisible = true;
-        let walletBalance = 5000000; // $5.000.000 COP initial
+    <!-- STATS & WALLET BAR -->
+    <div class="flex flex-wrap items-center gap-3 mt-2 sm:mt-0">
+      <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 text-xs">
+        <i class="fa-solid fa-users text-emerald-400"></i>
+        <span class="text-slate-400">Capacidad:</span>
+        <span class="font-bold text-white">78.838</span>
+      </div>
 
-        // Data arrays for seats
-        const seatDataList = [];
-        const seatMeshes = [];
+      <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 text-xs">
+        <i class="fa-solid fa-chair text-emerald-400"></i>
+        <span class="text-slate-400">Sillas 3D:</span>
+        <span class="font-bold text-white" id="rendered-seats-count">2,400</span>
+      </div>
 
-        // Colors strict 2-color rule
-        const COLOR_AVAILABLE = 0x10b981; // Green
-        const COLOR_OCCUPIED = 0x6b7280;  // Gray
-        const COLOR_SELECTED = 0xf59e0b;  // Gold/Amber outline
+      <div class="flex items-center space-x-2 bg-gradient-to-r from-emerald-950/60 to-slate-800 px-3.5 py-1.5 rounded-lg border border-emerald-500/40 text-xs shadow-inner">
+        <i class="fa-solid fa-wallet text-emerald-400"></i>
+        <span class="text-slate-300">Billetera Fan:</span>
+        <span class="font-extrabold text-emerald-400 text-sm" id="user-wallet-balance">$ 6.000.000 COP</span>
+      </div>
+    </div>
+  </header>
 
-        function init3D() {
-            const container = document.getElementById('three-container');
-            const width = container.clientWidth;
-            const height = container.clientHeight;
+  <!-- TABS BAR -->
+  <div class="w-full bg-slate-900 border-b border-slate-800 px-4 flex space-x-1 overflow-x-auto text-sm font-medium z-20">
+    <button id="tab-btn-3d" onclick="switchTab('3d')" class="px-4 py-3 border-b-2 border-emerald-400 text-emerald-400 font-semibold flex items-center gap-2 whitespace-nowrap transition-all">
+      <i class="fa-solid fa-cubes"></i>
+      1. Estudio 3D & Marketplace
+    </button>
+    <button id="tab-btn-cotas" onclick="switchTab('cotas')" class="px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap transition-all">
+      <i class="fa-solid fa-ruler-combined"></i>
+      2. Decimales & Cotas BIM
+    </button>
+    <button id="tab-btn-costos" onclick="switchTab('costos')" class="px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap transition-all">
+      <i class="fa-solid fa-calculator"></i>
+      3. Ecuaciones Lineales & Clima
+    </button>
+    <button id="tab-btn-cable" onclick="switchTab('cable')" class="px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap transition-all">
+      <i class="fa-solid fa-chart-line"></i>
+      4. Parábola Techo (Chart.js)
+    </button>
+  </div>
 
-            // Scene setup
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0f1d);
-            scene.fog = new THREE.FogExp2(0x0a0f1d, 0.0018);
+  <!-- MAIN MAIN CONTAINER -->
+  <main class="flex-1 relative overflow-hidden flex flex-col">
 
-            // Camera setup
-            camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 2000);
-            camera.position.set(160, 110, 220);
+    <!-- TAB 1: 3D VIEWPORT & MARKETPLACE -->
+    <div id="tab-content-3d" class="w-full h-full flex flex-col lg:flex-row relative flex-1 min-h-0">
+      
+      <!-- 3D VIEWPORT CANVAS AREA -->
+      <div id="canvas-container" class="flex-1 w-full h-full relative overflow-hidden">
+        
+        <!-- HUD TOP OVERLAY TOOLBAR -->
+        <div class="absolute top-4 left-4 right-4 flex flex-wrap justify-between items-center gap-2 z-10 pointer-events-none">
+          
+          <!-- Camera Presets -->
+          <div class="flex flex-wrap items-center gap-1.5 glass-panel p-1.5 rounded-xl pointer-events-auto shadow-xl">
+            <span class="text-xs text-slate-400 font-semibold px-2 flex items-center gap-1">
+              <i class="fa-solid fa-video text-emerald-400"></i> CÁMARA:
+            </span>
+            <button onclick="setCameraView('aerea')" class="px-2.5 py-1 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition border border-slate-700">Aérea</button>
+            <button onclick="setCameraView('fachada')" class="px-2.5 py-1 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition border border-slate-700">Fachada</button>
+            <button onclick="setCameraView('parqueadero')" class="px-2.5 py-1 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition border border-slate-700 text-emerald-300">Parqueadero</button>
+            <button onclick="setCameraView('tribuna')" class="px-2.5 py-1 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition border border-slate-700">Tribuna Alta</button>
+            <button onclick="setCameraView('campo')" class="px-2.5 py-1 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition border border-slate-700">Campo</button>
+          </div>
 
-            // Renderer setup
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
-            renderer.setSize(width, height);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.1;
-            container.appendChild(renderer.domElement);
+          <!-- Controls HUD right (Roof Toggle & Filter) -->
+          <div class="flex items-center gap-2 pointer-events-auto">
+            <!-- Roof Toggle Button -->
+            <button id="roof-toggle-btn" onclick="toggleRoofVisibility()" class="glass-panel hover:bg-slate-800/90 text-slate-100 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border border-slate-700 shadow-xl transition">
+              <i class="fa-solid fa-umbrella text-emerald-400"></i>
+              <span>Techo: <strong id="roof-status-text" class="text-emerald-400">VISIBLE</strong></span>
+            </button>
 
-            // OrbitControls setup
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.maxPolarAngle = Math.PI / 2 - 0.02; // Don't go below ground
-            controls.minDistance = 15;
-            controls.maxDistance = 600;
-            controls.target.set(0, 10, 0);
+            <!-- 2D Matrix Grid Modal Toggle -->
+            <button onclick="toggle2DMatrixModal()" class="glass-panel hover:bg-slate-800/90 text-slate-100 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border border-slate-700 shadow-xl transition">
+              <i class="fa-solid fa-grip-vertical text-teal-400"></i>
+              <span>Mapa 2D</span>
+            </button>
+          </div>
+        </div>
 
-            // Light sources
-            setupLighting();
+        <!-- BOTTOM HUD LEGEND & TIP -->
+        <div class="absolute bottom-4 left-4 z-10 pointer-events-none hidden sm:flex items-center gap-3 glass-panel px-3.5 py-2 rounded-xl text-xs text-slate-300">
+          <span class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block shadow-sm shadow-emerald-500/50"></span>
+            Disponible (#10b981)
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-slate-500 inline-block shadow-sm shadow-slate-500/50"></span>
+            Ocupado (#64748b)
+          </span>
+          <span class="text-slate-500">|</span>
+          <span class="text-slate-400"><i class="fa-solid fa-mouse text-emerald-400 mr-1"></i>Haz clic en cualquier silla 3D para inspeccionar</span>
+        </div>
 
-            // Root groups
-            stadiumGroup = new THREE.Group();
-            roofGroup = new THREE.Group();
-            carsGroup = new THREE.Group();
-            kiosksGroup = new THREE.Group();
-            landscapeGroup = new THREE.Group();
-            seatsGroup = new THREE.Group();
+        <!-- THREE.JS RENDER CANVAS CONTAINER -->
+        <div id="three-dom-element" class="w-full h-full"></div>
+      </div>
 
-            scene.add(stadiumGroup);
-            scene.add(roofGroup);
-            scene.add(carsGroup);
-            scene.add(kiosksGroup);
-            scene.add(landscapeGroup);
-            scene.add(seatsGroup);
+      <!-- FLOATING SEAT INSPECTION CARD & DETAILS (DESKTOP / MOBILE SIDEBAR) -->
+      <aside class="w-full lg:w-96 bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 p-5 flex flex-col justify-between overflow-y-auto z-20">
+        <div id="seat-card-content">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+            <h2 class="font-bold text-slate-100 text-base flex items-center gap-2">
+              <i class="fa-solid fa-circle-info text-emerald-400"></i> Inspector de Silla BIM
+            </h2>
+            <span id="seat-badge-status" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              DISPONIBLE
+            </span>
+          </div>
 
-            // Build Maracaná Elements
-            buildRioLandscape();
-            buildPitchAndField();
-            buildDoubleTierStands();
-            buildStructuralColumnsAndRing();
-            buildRoofMembraneAndCables();
-            buildParkingLotsAndCars(); // RULE 1: STRICT PARKING & CARS
-            buildExteriorFoodTrucks(); // RULE 2: FOOD TRUCKS
-            build2DSeatMatrixUI();
-
-            // Raycasting & Interaction listeners
-            setupInteractions();
-
-            // Handle Resize
-            window.addEventListener('resize', onWindowResize);
-
-            // Animation Loop
-            animate();
-        }
-
-        let dirLight, hemiLight;
-        function setupLighting() {
-            hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x0f172a, 0.7);
-            scene.add(hemiLight);
-
-            dirLight = new THREE.DirectionalLight(0xfff3e0, 1.4);
-            dirLight.position.set(150, 180, 100);
-            dirLight.castShadow = true;
-            dirLight.shadow.mapSize.width = 2048;
-            dirLight.shadow.mapSize.height = 2048;
-            dirLight.shadow.camera.near = 10;
-            dirLight.shadow.camera.far = 600;
-            const d = 180;
-            dirLight.shadow.camera.left = -d;
-            dirLight.shadow.camera.right = d;
-            dirLight.shadow.camera.top = d;
-            dirLight.shadow.camera.bottom = -d;
-            scene.add(dirLight);
-
-            // Warm ambient light for evening feel
-            const ambient = new THREE.AmbientLight(0x38bdf8, 0.25);
-            scene.add(ambient);
-        }
-
-        function buildRioLandscape() {
-            // Ground Plaza Base Plane
-            const plazaGeo = new THREE.CircleGeometry(320, 64);
-            const plazaMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 });
-            const plaza = new THREE.Mesh(plazaGeo, plazaMat);
-            plaza.rotation.x = -Math.PI / 2;
-            plaza.position.y = -0.1;
-            plaza.receiveShadow = true;
-            landscapeGroup.add(plaza);
-
-            // Guanabara Bay Water Mirror
-            const bayGeo = new THREE.PlaneGeometry(800, 400);
-            const bayMat = new THREE.MeshStandardMaterial({
-                color: 0x0284c7,
-                roughness: 0.1,
-                metalness: 0.8,
-                transparent: true,
-                opacity: 0.85
-            });
-            const bay = new THREE.Mesh(bayGeo, bayMat);
-            bay.rotation.x = -Math.PI / 2;
-            bay.position.set(280, -0.4, 0);
-            landscapeGroup.add(bay);
-
-            // Sugarloaf Mountain (Pan de Azúcar)
-            const sugarGeo = new THREE.ConeGeometry(45, 110, 16);
-            const mountainMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
-            const sugarloaf = new THREE.Mesh(sugarGeo, mountainMat);
-            sugarloaf.position.set(260, 50, -180);
-            landscapeGroup.add(sugarloaf);
-
-            const sugar2 = new THREE.Mesh(new THREE.ConeGeometry(30, 70, 16), mountainMat);
-            sugar2.position.set(210, 30, -210);
-            landscapeGroup.add(sugar2);
-
-            // Corcovado Mountain with Christ Silhouette
-            const corcovado = new THREE.Mesh(new THREE.ConeGeometry(65, 140, 16), mountainMat);
-            corcovado.position.set(-250, 65, -190);
-            landscapeGroup.add(corcovado);
-
-            // Christ Statue Mesh Silhouette
-            const christGroup = new THREE.Group();
-            const bodyGeo = new THREE.CylinderGeometry(1.2, 1.8, 12, 8);
-            const whiteMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
-            const body = new THREE.Mesh(bodyGeo, whiteMat);
+          <!-- Dynamic Seat Details -->
+          <div class="space-y-3.5 text-xs">
             
-            const armsGeo = new THREE.BoxGeometry(10, 1.2, 1.2);
-            const arms = new THREE.Mesh(armsGeo, whiteMat);
-            arms.position.y = 4;
+            <div class="glass-card p-3 rounded-xl flex justify-between items-center">
+              <span class="text-slate-400">Ubicación / Sector:</span>
+              <span id="seat-sector" class="font-semibold text-slate-100">Tribuna Baja - Sector 104</span>
+            </div>
 
-            christGroup.add(body);
-            christGroup.add(arms);
-            christGroup.position.set(-250, 138, -190);
-            landscapeGroup.add(christGroup);
+            <div class="grid grid-cols-2 gap-2">
+              <div class="glass-card p-3 rounded-xl">
+                <p class="text-slate-400 mb-1">Fila:</p>
+                <p id="seat-row" class="text-base font-bold text-white">Fila 14</p>
+              </div>
+              <div class="glass-card p-3 rounded-xl">
+                <p class="text-slate-400 mb-1">Silla No.:</p>
+                <p id="seat-number" class="text-base font-bold text-emerald-400">Silla 42</p>
+              </div>
+            </div>
 
-            // Tropical Palm Trees around concourse
-            for (let i = 0; i < 36; i++) {
-                const angle = (i / 36) * Math.PI * 2;
-                const r = 135 + (i % 3) * 6;
-                const px = Math.cos(angle) * r;
-                const pz = Math.sin(angle) * r;
+            <!-- Engineering parameters -->
+            <div class="glass-card p-3.5 rounded-xl space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400 flex items-center gap-1">
+                  <i class="fa-solid fa-arrows-up-to-line text-slate-500"></i> Cota de Elevación (h):
+                </span>
+                <span id="seat-elevation" class="font-bold text-slate-200">+8.45 m</span>
+              </div>
+              
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400 flex items-center gap-1">
+                  <i class="fa-solid fa-eye text-slate-500"></i> Isóptica (Valor C):
+                </span>
+                <span id="seat-c-value" class="font-bold text-emerald-400">0.12 m (≥ 0.09m)</span>
+              </div>
 
-                // Avoid placing trees inside parking rectangular zones!
-                if ((px > 60 && px < 180 && Math.abs(pz) < 70) || (px < -60 && px > -180 && Math.abs(pz) < 70)) {
-                    continue; // Keep parking zone clear of trees
-                }
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400 flex items-center gap-1">
+                  <i class="fa-solid fa-bullseye text-slate-500"></i> Distancia Focal:
+                </span>
+                <span id="seat-distance" class="font-bold text-slate-200">38.2 m</span>
+              </div>
 
-                createPalmTree(px, pz);
-            }
-        }
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400 flex items-center gap-1">
+                  <i class="fa-solid fa-star text-amber-400"></i> Calidad de Visión:
+                </span>
+                <span id="seat-score" class="font-bold text-amber-300">96.5 %</span>
+              </div>
+            </div>
 
-        function createPalmTree(x, z) {
-            const trunkGeo = new THREE.CylinderGeometry(0.4, 0.7, 10, 6);
-            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
-            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-            trunk.position.set(x, 5, z);
-            trunk.rotation.z = (Math.random() - 0.5) * 0.15;
-            trunk.castShadow = true;
-            landscapeGroup.add(trunk);
+            <!-- Price Formula card -->
+            <div class="glass-card p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-950/10 space-y-1.5">
+              <div class="text-slate-400 text-[11px]">Ecuación de Precio Paramétrico:</div>
+              <div class="text-slate-300 font-mono text-[11px]">$P(h) = 140.000 + (18.000 \times h)$ COP</div>
+              <div class="flex justify-between items-baseline pt-2 border-t border-slate-800">
+                <span class="text-slate-300 font-medium">Valor Total Silla:</span>
+                <span id="seat-price" class="text-lg font-extrabold text-emerald-400">$ 292.100 COP</span>
+              </div>
+            </div>
 
-            // Leaves
-            const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.6, side: THREE.DoubleSide });
-            for (let i = 0; i < 6; i++) {
-                const leaf = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 6), leafMat);
-                leaf.position.set(x, 9.8, z);
-                leaf.rotation.x = Math.PI / 3;
-                leaf.rotation.y = (i / 6) * Math.PI * 2;
-                landscapeGroup.add(leaf);
-            }
-        }
+          </div>
+        </div>
 
-        function buildPitchAndField() {
-            // Field base (105m x 68m scaled)
-            const pitchGeo = new THREE.PlaneGeometry(110, 75);
-            const pitchMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.7 });
-            const pitch = new THREE.Mesh(pitchGeo, pitchMat);
-            pitch.rotation.x = -Math.PI / 2;
-            pitch.receiveShadow = true;
-            stadiumGroup.add(pitch);
+        <!-- Action Button -->
+        <div class="mt-4 pt-3 border-t border-slate-800">
+          <button id="btn-buy-sell" onclick="processSeatTransaction()" class="w-full py-3 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span id="btn-buy-text">COMPRAR SILLA SELECCIONADA</span>
+          </button>
+        </div>
+      </aside>
+    </div>
 
-            // Striped grass pattern overlay
-            for (let i = -50; i < 50; i += 10) {
-                const stripeGeo = new THREE.PlaneGeometry(5, 75);
-                const stripeMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.7 });
-                const stripe = new THREE.Mesh(stripeGeo, stripeMat);
-                stripe.rotation.x = -Math.PI / 2;
-                stripe.position.set(i + 2.5, 0.01, 0);
-                stripe.receiveShadow = true;
-                stadiumGroup.add(stripe);
-            }
+    <!-- TAB 2: COTAS & DECIMALES BIM -->
+    <div id="tab-content-cotas" class="w-full h-full p-6 overflow-y-auto hidden space-y-6 max-w-7xl mx-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+            <i class="fa-solid fa-ruler-combined text-emerald-400"></i> Cotas Nivel B.I.M. & Operaciones Decimales
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Cálculo de niveles altimétricos (+m), volumen de concreto prefabricado y tolerancias de ensamblaje.</p>
+        </div>
+        <div class="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+          Tolerancia BIM: ± 0.005 m (5mm)
+        </div>
+      </div>
 
-            // Pitch Lines Canvas Texture
-            const lineCanvas = document.createElement('canvas');
-            lineCanvas.width = 1024;
-            lineCanvas.height = 680;
-            const ctx = lineCanvas.getContext('2d');
+      <!-- ELEVATION LEVELS TABLE -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Table Column -->
+        <div class="lg:col-span-2 glass-panel p-5 rounded-2xl border border-slate-800 space-y-4">
+          <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-teal-400"></i> Tabla de Cotas Estructurales
+          </h3>
 
-            ctx.fillStyle = 'rgba(0,0,0,0)';
-            ctx.fillRect(0, 0, 1024, 680);
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 6;
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400 bg-slate-900/60">
+                  <th class="p-3">Elemento Estructural</th>
+                  <th class="p-3">Cota Nivel (m)</th>
+                  <th class="p-3">Piso / Nivel</th>
+                  <th class="p-3">Material B.I.M.</th>
+                  <th class="p-3">Volumen Est. (m³)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800 text-slate-300 font-mono">
+                <tr class="hover:bg-slate-800/40">
+                  <td class="p-3 font-sans font-semibold text-white">Nivel Campo de Juego</td>
+                  <td class="p-3 text-emerald-400 font-bold">+0,000 m</td>
+                  <td class="p-3">Nivel 0</td>
+                  <td class="p-3">Césped Híbrido Bermudas</td>
+                  <td class="p-3">1.050,00 m³</td>
+                </tr>
+                <tr class="hover:bg-slate-800/40">
+                  <td class="p-3 font-sans font-semibold text-white">Tribuna Baja (Primera Fila)</td>
+                  <td class="p-3 text-emerald-400">+1,850 m</td>
+                  <td class="p-3">Nivel 1</td>
+                  <td class="p-3">Hormigón HA-35</td>
+                  <td class="p-3">1.840,50 m³</td>
+                </tr>
+                <tr class="hover:bg-slate-800/40">
+                  <td class="p-3 font-sans font-semibold text-white">Anillo Concurso Medio</td>
+                  <td class="p-3 text-emerald-400">+9,400 m</td>
+                  <td class="p-3">Nivel 2</td>
+                  <td class="p-3">Losa Alveolar Viguetas</td>
+                  <td class="p-3">2.412,30 m³</td>
+                </tr>
+                <tr class="hover:bg-slate-800/40">
+                  <td class="p-3 font-sans font-semibold text-white">Tribuna Alta (Límite Superior)</td>
+                  <td class="p-3 text-emerald-400">+22,150 m</td>
+                  <td class="p-3">Nivel 3</td>
+                  <td class="p-3">Gradas Prefabricadas</td>
+                  <td class="p-3">2.960,21 m³</td>
+                </tr>
+                <tr class="hover:bg-slate-800/40">
+                  <td class="p-3 font-sans font-semibold text-white">Anillo Compresión Techo PTFE</td>
+                  <td class="p-3 text-amber-400 font-bold">+32,000 m</td>
+                  <td class="p-3">Cubierta</td>
+                  <td class="p-3">Acero S355 & Cable Tensión</td>
+                  <td class="p-3">2.529,00 m³ (equiv)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-            // Outer line
-            ctx.strokeRect(30, 30, 964, 620);
-            // Center line
-            ctx.beginPath();
-            ctx.moveTo(512, 30);
-            ctx.lineTo(512, 650);
-            ctx.stroke();
-            // Center circle
-            ctx.beginPath();
-            ctx.arc(512, 340, 90, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Penalty boxes
-            ctx.strokeRect(30, 180, 150, 320);
-            ctx.strokeRect(844, 180, 150, 320);
-
-            const pitchTexture = new THREE.CanvasTexture(lineCanvas);
-            const linesGeo = new THREE.PlaneGeometry(105, 68);
-            const linesMat = new THREE.MeshBasicMaterial({ map: pitchTexture, transparent: true, opacity: 0.9 });
-            const linesMesh = new THREE.Mesh(linesGeo, linesMat);
-            linesMesh.rotation.x = -Math.PI / 2;
-            linesMesh.position.y = 0.02;
-            stadiumGroup.add(linesMesh);
-
-            // 3D Goalposts
-            createGoalpost(-51);
-            createGoalpost(51);
-        }
-
-        function createGoalpost(xPos) {
-            const frameMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
-            const postGeo = new THREE.CylinderGeometry(0.15, 0.15, 3.5);
-
-            const p1 = new THREE.Mesh(postGeo, frameMat);
-            p1.position.set(xPos, 1.75, -4);
-            const p2 = new THREE.Mesh(postGeo, frameMat);
-            p2.position.set(xPos, 1.75, 4);
-
-            const barGeo = new THREE.CylinderGeometry(0.15, 0.15, 8);
-            const bar = new THREE.Mesh(barGeo, frameMat);
-            bar.rotation.x = Math.PI / 2;
-            bar.position.set(xPos, 3.5, 0);
-
-            stadiumGroup.add(p1);
-            stadiumGroup.add(p2);
-            stadiumGroup.add(bar);
-        }
-
-        function buildDoubleTierStands() {
-            // Maracaná Continuous Oval Seating Bowl
-            const concreteMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
-
-            // Lower Tier (Anillo Inferior)
-            const lowerBowlGeo = new THREE.CylinderGeometry(72, 54, 12, 64, 1, true);
-            const lowerBowl = new THREE.Mesh(lowerBowlGeo, concreteMat);
-            lowerBowl.position.y = 6;
-            stadiumGroup.add(lowerBowl);
-
-            // Middle Concourse Ring
-            const concourseGeo = new THREE.RingGeometry(71, 76, 64);
-            const concourseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
-            const concourse = new THREE.Mesh(concourseGeo, concourseMat);
-            concourse.rotation.x = -Math.PI / 2;
-            concourse.position.y = 12;
-            stadiumGroup.add(concourse);
-
-            // Upper Tier (Anillo Superior)
-            const upperBowlGeo = new THREE.CylinderGeometry(110, 76, 22, 64, 1, true);
-            const upperBowl = new THREE.Mesh(upperBowlGeo, concreteMat);
-            upperBowl.position.y = 23;
-            stadiumGroup.add(upperBowl);
-
-            // GENERATE 3D SEATS WITH STRICT 2-COLOR SYSTEM (GREEN/GRAY)
-            const seatGeo = new THREE.BoxGeometry(0.9, 0.8, 0.8);
-
-            // Lower Tier Seats
-            generateTierSeats(60, 70, 10, 6, 200, "Baja", seatGeo);
-            // Upper Tier Seats
-            generateTierSeats(78, 106, 16, 13, 320, "Alta", seatGeo);
-        }
-
-        function generateTierSeats(rMin, rMax, rows, startY, seatCount, tierName, seatGeo) {
-            const sectors = ["Norte", "Sur", "Leste", "Oeste"];
-
-            for (let i = 0; i < seatCount; i++) {
-                const fraction = i / seatCount;
-                const angle = fraction * Math.PI * 2;
-                const rowIdx = i % rows;
-                const r = rMin + (rowIdx / rows) * (rMax - rMin);
-                const h = startY + (rowIdx / rows) * 14.5;
-
-                // Oval distortion for classic Maracaná ellipse shape
-                const x = Math.cos(angle) * (r * 1.15);
-                const z = Math.sin(angle) * r;
-
-                // Strict 2-Color State Assignment
-                const isAvailable = Math.random() > 0.35; // 65% available (Green), 35% occupied (Gray)
-                const colorHex = isAvailable ? COLOR_AVAILABLE : COLOR_OCCUPIED;
-
-                const seatMat = new THREE.MeshStandardMaterial({
-                    color: colorHex,
-                    roughness: 0.5,
-                    metalness: 0.1
-                });
-
-                const seatMesh = new THREE.Mesh(seatGeo, seatMat);
-                seatMesh.position.set(x, h + 0.4, z);
-                seatMesh.lookAt(0, h, 0); // Face the pitch center
-                seatMesh.castShadow = true;
-
-                // Technical Isoptic calculations
-                const distToCenter = Math.sqrt(x * x + z * z).toFixed(1);
-                const cValue = (0.09 + Math.random() * 0.05).toFixed(3);
-                const priceCOP = Math.round(140000 + 18000 * h);
-                const quality = Math.min(99, Math.round(100 - (distToCenter / 120) * 20)).toFixed(1);
-
-                const sectorName = sectors[Math.floor((angle / (Math.PI * 2)) * 4)];
-                const seatCode = `MAR-${tierName}-${sectorName.charAt(0)}${rowIdx + 1}-${(i % 99) + 1}`;
-
-                // Metadata binding
-                const seatData = {
-                    id: i,
-                    code: seatCode,
-                    tier: tierName,
-                    sector: sectorName,
-                    row: rowIdx + 1,
-                    number: (i % 99) + 1,
-                    height: h.toFixed(2),
-                    cValue: cValue,
-                    distance: distToCenter,
-                    quality: quality,
-                    price: priceCOP,
-                    available: isAvailable,
-                    mesh: seatMesh
-                };
-
-                seatMesh.userData = seatData;
-                seatsGroup.add(seatMesh);
-                seatMeshes.push(seatMesh);
-                seatDataList.push(seatData);
-            }
-        }
-
-        function buildStructuralColumnsAndRing() {
-            // Outer Ring Compression Beam
-            const ringGeo = new THREE.TorusGeometry(112, 2.5, 16, 64);
-            const concreteMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.4 });
-            const ringMesh = new THREE.Mesh(ringGeo, concreteMat);
-            ringMesh.rotation.x = Math.PI / 2;
-            ringMesh.position.y = 34;
-            stadiumGroup.add(ringMesh);
-
-            // 60 Classic Maracaná Y-Shaped Concrete Columns
-            const colCount = 60;
-            const radius = 112;
-
-            for (let i = 0; i < colCount; i++) {
-                const angle = (i / colCount) * Math.PI * 2;
-                const x = Math.cos(angle) * (radius * 1.15);
-                const z = Math.sin(angle) * radius;
-
-                // Main vertical stem
-                const colGeo = new THREE.CylinderGeometry(1.2, 1.8, 32, 8);
-                const col = new THREE.Mesh(colGeo, concreteMat);
-                col.position.set(x, 16, z);
-                col.castShadow = true;
-                stadiumGroup.add(col);
-
-                // Y-fork branches
-                const branchGeo = new THREE.CylinderGeometry(0.8, 1.1, 7, 8);
-                const b1 = new THREE.Mesh(branchGeo, concreteMat);
-                b1.position.set(x + Math.cos(angle + 0.1) * 2, 32, z + Math.sin(angle + 0.1) * 2);
-                b1.rotation.z = 0.2;
-                stadiumGroup.add(b1);
-            }
-        }
-
-        function buildRoofMembraneAndCables() {
-            // Tension inner ring
-            const innerRingGeo = new THREE.TorusGeometry(74, 1.2, 12, 64);
-            const steelMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
-            const innerRing = new THREE.Mesh(innerRingGeo, steelMat);
-            innerRing.rotation.x = Math.PI / 2;
-            innerRing.position.y = 31;
-            roofGroup.add(innerRing);
-
-            // Cable spokes connecting outer compression ring to inner ring
-            const cableCount = 60;
-            const cableMat = new THREE.LineBasicMaterial({ color: 0xd1d5db, linewidth: 2 });
-
-            for (let i = 0; i < cableCount; i++) {
-                const angle = (i / cableCount) * Math.PI * 2;
-                const xOuter = Math.cos(angle) * (112 * 1.15);
-                const zOuter = Math.sin(angle) * 112;
-                const xInner = Math.cos(angle) * (74 * 1.15);
-                const zInner = Math.sin(angle) * 74;
-
-                const points = [
-                    new THREE.Vector3(xOuter, 34, zOuter),
-                    new THREE.Vector3(xInner, 31, zInner)
-                ];
-                const cableGeo = new THREE.BufferGeometry().setFromPoints(points);
-                const cableLine = new THREE.Line(cableGeo, cableMat);
-                roofGroup.add(cableLine);
-            }
-
-            // PTFE Membrane Roof Surface (Translucent Ring)
-            const membraneGeo = new THREE.RingGeometry(74, 114, 64);
-            const membraneMat = new THREE.MeshStandardMaterial({
-                color: 0xf8fafc,
-                roughness: 0.3,
-                transparent: true,
-                opacity: 0.82,
-                side: THREE.DoubleSide
-            });
-            const membrane = new THREE.Mesh(membraneGeo, membraneMat);
-            membrane.rotation.x = -Math.PI / 2;
-            membrane.position.y = 33.5;
-            roofGroup.add(membrane);
-        }
-
-        function buildParkingLotsAndCars() {
-            // RULE 1 IMPLEMENTATION: STRICTLY DELIMITED ASPHALT PARKING ZONES WITH PAINTED BAYS
+        <!-- Volume Calculation Breakdown -->
+        <div class="glass-panel p-5 rounded-2xl border border-slate-800 space-y-4 flex flex-col justify-between">
+          <div>
+            <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2 mb-3">
+              <i class="fa-solid fa-cubes-stacked text-amber-400"></i> Sumatoria Volumen Concreto
+            </h3>
             
-            // 1. NORTH PARKING ZONE
-            createParkingZone(120, -10, 0, 70, 110, "NORTE");
+            <div class="space-y-3 text-xs">
+              <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <span class="text-slate-400">60 Pilares Exteriores Y:</span>
+                <span class="font-mono font-semibold text-slate-200">2.529,00 m³</span>
+              </div>
+              <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <span class="text-slate-400">Vigas e Isópticas Prefabricadas:</span>
+                <span class="font-mono font-semibold text-slate-200">3.412,80 m³</span>
+              </div>
+              <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <span class="text-slate-400">Zapatas y Cimentación Profunda:</span>
+                <span class="font-mono font-semibold text-slate-200">2.320,21 m³</span>
+              </div>
+            </div>
+          </div>
 
-            // 2. SOUTH/WEST PARKING ZONE
-            createParkingZone(-120, -10, 0, 70, 110, "SUR-OESTE");
+          <div class="p-4 rounded-xl bg-slate-900 border border-emerald-500/30 mt-4 space-y-1">
+            <span class="text-slate-400 text-xs">Volumen Total Concreto Estructural:</span>
+            <div class="text-2xl font-black text-emerald-400 font-mono">8.262,01 m³</div>
+            <p class="text-[11px] text-slate-500">Suma exacta con 2 decimales según norma estructural BIM LOD 400.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 3: COST & THERMAL EQUATIONS -->
+    <div id="tab-content-costos" class="w-full h-full p-6 overflow-y-auto hidden space-y-6 max-w-7xl mx-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+            <i class="fa-solid fa-calculator text-emerald-400"></i> Ecuaciones Lineales de Costos & Balance Térmico HVAC
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Modelos matemáticos lineales para presupuesto estructural en COP y carga térmica por espectadores.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Budget Equations Card -->
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-5">
+          <h3 class="font-bold text-base text-slate-100 flex items-center gap-2">
+            <i class="fa-solid fa-coins text-amber-400"></i> Presupuesto por Fachada & Asientos (COP)
+          </h3>
+
+          <div class="glass-card p-4 rounded-xl space-y-2 border border-slate-700/50">
+            <p class="text-xs text-slate-400">Ecuación Costo Paneles Fachada Perimetral:</p>
+            <div class="text-sm font-mono text-emerald-300 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+              $C_{fachada}(A) = 145.000 \times A + 2.500.000$ COP
+            </div>
+            <p class="text-[11px] text-slate-400">Donde $A$ es el área en m² de paneles de policarbonato translúcido.</p>
+          </div>
+
+          <div class="glass-card p-4 rounded-xl space-y-2 border border-slate-700/50">
+            <p class="text-xs text-slate-400">Ecuación Costo Total de Sillería en Gradas:</p>
+            <div class="text-sm font-mono text-emerald-300 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+              $C_{sillas}(N) = 180.000 \times N + 15.000.000$ COP
+            </div>
+            <p class="text-[11px] text-slate-400">Para $N = 78.838$ espectadores: <strong class="text-white">$ 14.205.840.000 COP</strong></p>
+          </div>
+        </div>
+
+        <!-- Thermal HVAC Balance Simulator -->
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-5">
+          <h3 class="font-bold text-base text-slate-100 flex items-center gap-2">
+            <i class="fa-solid fa-temperature-arrow-up text-red-400"></i> Simulación Carga Térmica HVAC (Río de Janeiro)
+          </h3>
+
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300">Temperatura Ambiente Exterior ($T_{amb}$):</span>
+                <span id="temp-slider-val" class="font-bold text-red-400">32 °C</span>
+              </div>
+              <input id="temp-slider" type="range" min="20" max="42" value="32" oninput="updateHVACSimulation()" class="w-full accent-emerald-500 cursor-pointer">
+            </div>
+
+            <div class="glass-card p-4 rounded-xl space-y-2 text-xs">
+              <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <span class="text-slate-400">Calor Metabólico Espectadores (78.838 x 80W):</span>
+                <span class="font-mono text-white font-bold">6,31 MW</span>
+              </div>
+              <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <span class="text-slate-400">Radiación Solar Incidente (Cubierta PTFE):</span>
+                <span id="solar-heat-val" class="font-mono text-amber-400 font-bold">2,23 MW</span>
+              </div>
+              <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <span class="text-slate-400">Potencia Focos LED Iluminación (4 Torres):</span>
+                <span class="font-mono text-white font-bold">1,28 MW</span>
+              </div>
+              <div class="flex justify-between items-center pt-2 text-sm font-bold">
+                <span class="text-slate-200">Requerimiento Frigorífico Total:</span>
+                <span id="total-hvac-val" class="font-mono text-emerald-400">9,82 MW (2.793 TR)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 4: PARABOLA CABLES CHART.JS -->
+    <div id="tab-content-cable" class="w-full h-full p-6 overflow-y-auto hidden space-y-6 max-w-7xl mx-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-emerald-400"></i> Parábola Estructural de Cable de Techo
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Ecuación cuadrática $y(x) = a \cdot x^2 + b \cdot x$ para la flecha de la red de cables tensionados de la cubierta.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Controls Column -->
+        <div class="glass-panel p-5 rounded-2xl border border-slate-800 space-y-5">
+          <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-teal-400"></i> Parámetros de la Parábola
+          </h3>
+
+          <div class="space-y-4 text-xs">
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="text-slate-300">Flecha Central ($f$):</span>
+                <span id="parabola-f-val" class="font-mono font-bold text-emerald-400">8,0 m</span>
+              </div>
+              <input id="parabola-f-input" type="range" min="4" max="14" step="0.5" value="8" oninput="updateParabolaChart()" class="w-full accent-emerald-500">
+            </div>
+
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="text-slate-300">Luz del Cable ($L$):</span>
+                <span id="parabola-L-val" class="font-mono font-bold text-emerald-400">140,0 m</span>
+              </div>
+              <input id="parabola-L-input" type="range" min="100" max="180" step="5" value="140" oninput="updateParabolaChart()" class="w-full accent-emerald-500">
+            </div>
+
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="text-slate-300">Carga Uniforme Distribuida ($w$):</span>
+                <span id="parabola-w-val" class="font-mono font-bold text-emerald-400">18,0 kN/m</span>
+              </div>
+              <input id="parabola-w-input" type="range" min="10" max="30" step="1" value="18" oninput="updateParabolaChart()" class="w-full accent-emerald-500">
+            </div>
+          </div>
+
+          <!-- Calculation outputs -->
+          <div class="glass-card p-4 rounded-xl space-y-2 text-xs border border-slate-700/60">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Empuje Horizontal ($H = \frac{w L^2}{8 f}$):</span>
+              <span id="calc-H-val" class="font-mono font-bold text-amber-400">5.512,5 kN</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Tensión Máxima ($T_{max}$):</span>
+              <span id="calc-T-val" class="font-mono font-bold text-emerald-400">5.654,1 kN</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="lg:col-span-2 glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+          <h3 class="font-bold text-sm text-slate-200 mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-chart-area text-emerald-400"></i> Geometría Catena/Parábola Techo
+          </h3>
+          <div class="w-full h-72 sm:h-80 relative">
+            <canvas id="parabolaChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: 2D SEAT MATRIX -->
+  <div id="modal-2d-matrix" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel w-full max-w-4xl max-h-[85vh] rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/90">
+        <h3 class="font-bold text-slate-100 text-sm flex items-center gap-2">
+          <i class="fa-solid fa-border-all text-emerald-400"></i> Mapa Matricial 2D - Distribución de Sillas
+        </h3>
+        <button onclick="toggle2DMatrixModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto flex-1 space-y-4">
+        <div class="flex justify-center gap-6 text-xs mb-2">
+          <span class="flex items-center gap-2"><span class="w-3.5 h-3.5 rounded bg-emerald-500"></span> Verde: Disponible</span>
+          <span class="flex items-center gap-2"><span class="w-3.5 h-3.5 rounded bg-slate-600"></span> Gris: Ocupado</span>
+        </div>
+
+        <div class="text-center text-xs font-bold text-emerald-400 border-b border-emerald-500/20 pb-2 mb-4">
+          — ORIENTACIÓN CAMPO DE JUEGO —
+        </div>
+
+        <!-- Grid Matrix Container -->
+        <div id="matrix-grid-container" class="grid grid-cols-12 sm:grid-cols-16 gap-1.5 justify-items-center">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div class="p-3 border-t border-slate-800 bg-slate-900/90 text-right">
+        <button onclick="toggle2DMatrixModal()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl">
+          Cerrar Mapa
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ====================================================================
+       GLOBAL STATE & DYNAMIC DATA
+       ==================================================================== */
+    let scene, camera, renderer, controls;
+    let seatMeshGroup, seatDataList = [];
+    let roofGroup;
+    let isRoofVisible = true;
+
+    // Raycasting & Interaction
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let selectedSeatIndex = null;
+    let instancedSeatsMesh = null;
+    let dummyMatrix = new THREE.Object3D();
+
+    // User Wallet State
+    let userWalletBalance = 6000000; // $ 6.000.000 COP
+
+    // Colors
+    const COLOR_AVAILABLE = new THREE.Color(0x10b981); // Emerald Green
+    const COLOR_OCCUPIED  = new THREE.Color(0x64748b); // Slate Gray
+    const COLOR_SELECTED  = new THREE.Color(0xf59e0b); // Gold Amber
+
+    /* ====================================================================
+       WINDOW LOAD & INITIALIZATION
+       ==================================================================== */
+    window.onload = function () {
+      initThreeJS();
+      buildRioEnvironment();
+      buildStadiumPitch();
+      buildSeatingBowlAndSeats();
+      buildStructuralPylons();
+      buildRoofStructure();
+      buildFoodTrucksAndKiosks();
+      buildOrganizedParkingLotsAndCars();
+      buildOrganizedTreesAndLandscaping();
+      
+      setupRaycasterEvents();
+      initParabolaChart();
+      generate2DMatrixGrid();
+      
+      animate();
+    };
+
+    function initThreeJS() {
+      const container = document.getElementById('three-dom-element');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0b132b);
+      scene.fog = new THREE.FogExp2(0x0b132b, 0.0018);
+
+      camera = new THREE.PerspectiveCamera(45, width / height, 1, 1000);
+      camera.position.set(0, 180, 260);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 2 - 0.01; // Don't go below ground
+      controls.minDistance = 15;
+      controls.maxDistance = 450;
+      controls.target.set(0, 5, 0);
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+      scene.add(ambientLight);
+
+      const sunLight = new THREE.DirectionalLight(0xfffaf0, 1.2);
+      sunLight.position.set(120, 250, 100);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.width = 2048;
+      sunLight.shadow.mapSize.height = 2048;
+      sunLight.shadow.camera.near = 10;
+      sunLight.shadow.camera.far = 600;
+      sunLight.shadow.camera.left = -220;
+      sunLight.shadow.camera.right = 220;
+      sunLight.shadow.camera.top = 220;
+      sunLight.shadow.camera.bottom = -220;
+      scene.add(sunLight);
+
+      // Handle Resize
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('three-dom-element');
+      if (!container) return;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    function buildRioEnvironment() {
+      // Guanabara Bay Water Plane
+      const waterGeo = new THREE.PlaneGeometry(1200, 1200);
+      const waterMat = new THREE.MeshStandardMaterial({
+        color: 0x0f2b48,
+        roughness: 0.1,
+        metalness: 0.8
+      });
+      const water = new THREE.Mesh(waterGeo, waterMat);
+      water.rotation.x = -Math.PI / 2;
+      water.position.y = -1.5;
+      scene.add(water);
+
+      // Pan de Azúcar (Sugarloaf Mountain)
+      const sugarGeo = new THREE.ConeGeometry(55, 120, 16);
+      const mtnMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+      const sugarLoaf = new THREE.Mesh(sugarGeo, mtnMat);
+      sugarLoaf.position.set(320, 50, -220);
+      scene.add(sugarLoaf);
+
+      // Corcovado Mountain & Christ Silhouette
+      const corcovadoGeo = new THREE.ConeGeometry(80, 160, 16);
+      const corcovado = new THREE.Mesh(corcovadoGeo, mtnMat);
+      corcovado.position.set(-300, 70, -280);
+      scene.add(corcovado);
+
+      // Glowing Christ Statue
+      const christGroup = new THREE.Group();
+      const bodyGeo = new THREE.BoxGeometry(3, 14, 3);
+      const armsGeo = new THREE.BoxGeometry(16, 2.5, 2.5);
+      const christMat = new THREE.MeshBasicMaterial({ color: 0xe2e8f0 });
+      const body = new THREE.Mesh(bodyGeo, christMat);
+      const arms = new THREE.Mesh(armsGeo, christMat);
+      arms.position.y = 4;
+      christGroup.add(body, arms);
+      christGroup.position.set(-300, 155, -280);
+      scene.add(christGroup);
+    }
+
+    function buildStadiumPitch() {
+      // Main Pitch Lawn (105m x 68m)
+      const pitchGeo = new THREE.PlaneGeometry(105, 68);
+      
+      // Canvas generated pitch texture with grass stripes & white line markings
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 680;
+      const ctx = canvas.getContext('2d');
+
+      // Alternating green stripes
+      const numStripes = 12;
+      const stripeW = canvas.width / numStripes;
+      for (let i = 0; i < numStripes; i++) {
+        ctx.fillStyle = (i % 2 === 0) ? '#15803d' : '#166534';
+        ctx.fillRect(i * stripeW, 0, stripeW, canvas.height);
+      }
+
+      // White lines
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 6;
+
+      // Outer boundary line
+      ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+
+      // Center Line & Circle
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, 30);
+      ctx.lineTo(canvas.width / 2, canvas.height - 30);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2, canvas.height / 2, 80, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Penalty Areas
+      ctx.strokeRect(30, canvas.height / 2 - 140, 140, 280);
+      ctx.strokeRect(canvas.width - 170, canvas.height / 2 - 140, 140, 280);
+
+      const pitchTexture = new THREE.CanvasTexture(canvas);
+      const pitchMat = new THREE.MeshStandardMaterial({ map: pitchTexture, roughness: 0.7 });
+      const pitchMesh = new THREE.Mesh(pitchGeo, pitchMat);
+      pitchMesh.rotation.x = -Math.PI / 2;
+      pitchMesh.receiveShadow = true;
+      scene.add(pitchMesh);
+
+      // 3D Goals
+      createGoalMesh(-52.5);
+      createGoalMesh(52.5);
+    }
+
+    function createGoalMesh(xPos) {
+      const goalGroup = new THREE.Group();
+      const postMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+      
+      const post1 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.44), postMat);
+      post1.position.set(xPos, 1.22, -3.66);
+      
+      const post2 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.44), postMat);
+      post2.position.set(xPos, 1.22, 3.66);
+
+      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 7.32), postMat);
+      bar.rotation.x = Math.PI / 2;
+      bar.position.set(xPos, 2.44, 0);
+
+      goalGroup.add(post1, post2, bar);
+      scene.add(goalGroup);
+    }
+
+    function buildSeatingBowlAndSeats() {
+      // Total clickable seats instance: 2,400
+      const totalSeats = 2400;
+      const seatGeo = new THREE.BoxGeometry(0.8, 0.7, 0.8);
+      const seatMat = new THREE.MeshStandardMaterial({ roughness: 0.5 });
+
+      instancedSeatsMesh = new THREE.InstancedMesh(seatGeo, seatMat, totalSeats);
+      instancedSeatsMesh.castShadow = true;
+      instancedSeatsMesh.receiveShadow = true;
+
+      seatDataList = [];
+      let seatIdx = 0;
+
+      // Tier 1: Grada Baja (Rings 1 to 12)
+      for (let ring = 1; ring <= 12; ring++) {
+        const radiusX = 58 + ring * 1.8;
+        const radiusZ = 42 + ring * 1.5;
+        const heightY = 0.8 + ring * 0.65;
+        const seatsInRing = 100;
+
+        for (let s = 0; s < seatsInRing; s++) {
+          if (seatIdx >= totalSeats) break;
+
+          const angle = (s / seatsInRing) * Math.PI * 2;
+          const x = Math.cos(angle) * radiusX;
+          const z = Math.sin(angle) * radiusZ;
+
+          dummyMatrix.position.set(x, heightY, z);
+          dummyMatrix.rotation.y = -angle + Math.PI / 2;
+          dummyMatrix.updateMatrix();
+
+          instancedSeatsMesh.setMatrixAt(seatIdx, dummyMatrix.matrix);
+
+          // Status: 60% available (green), 40% occupied (slate gray)
+          const isAvailable = Math.random() > 0.4;
+          const status = isAvailable ? 'verde' : 'gris';
+          instancedSeatsMesh.setColorAt(seatIdx, isAvailable ? COLOR_AVAILABLE : COLOR_OCCUPIED);
+
+          // Calculate engineering properties
+          const distToCenter = Math.hypot(x, z);
+          const priceCOP = 140000 + Math.round(18000 * heightY);
+          const cValue = (0.09 + (ring * 0.003)).toFixed(2);
+          const qualityScore = Math.max(70, Math.min(99, 100 - Math.round(distToCenter * 0.3))).toFixed(1);
+
+          seatDataList.push({
+            id: seatIdx,
+            sector: `Tribuna Baja - Sector ${100 + Math.floor(s / 25)}`,
+            row: `Fila ${ring}`,
+            seatNum: `Silla ${(s % 25) + 1}`,
+            elevation: `+${heightY.toFixed(2)} m`,
+            elevationNum: heightY,
+            cValue: `${cValue} m`,
+            distance: `${distToCenter.toFixed(1)} m`,
+            score: `${qualityScore} %`,
+            price: priceCOP,
+            status: status
+          });
+
+          seatIdx++;
         }
+      }
 
-        function createParkingZone(centerX, centerY, centerZ, width, length, zoneName) {
-            // Asphalt Ground Slab
-            const asphaltGeo = new THREE.BoxGeometry(width, 0.4, length);
-            const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.95 });
-            const asphalt = new THREE.Mesh(asphaltGeo, asphaltMat);
-            asphalt.position.set(centerX, 0.1, centerZ);
-            asphalt.receiveShadow = true;
-            carsGroup.add(asphalt);
+      // Tier 2: Grada Alta (Rings 13 to 24)
+      for (let ring = 13; ring <= 24; ring++) {
+        const radiusX = 64 + ring * 2.1;
+        const radiusZ = 46 + ring * 1.8;
+        const heightY = 3.5 + ring * 0.82;
+        const seatsInRing = 100;
 
-            // Painted White Lines for Parking Bays Canvas Texture
-            const pCanvas = document.createElement('canvas');
-            pCanvas.width = 512;
-            pCanvas.height = 512;
-            const pCtx = pCanvas.getContext('2d');
+        for (let s = 0; s < seatsInRing; s++) {
+          if (seatIdx >= totalSeats) break;
 
-            pCtx.fillStyle = '#1e293b';
-            pCtx.fillRect(0, 0, 512, 512);
+          const angle = (s / seatsInRing) * Math.PI * 2;
+          const x = Math.cos(angle) * radiusX;
+          const z = Math.sin(angle) * radiusZ;
 
-            pCtx.strokeStyle = '#ffffff';
-            pCtx.lineWidth = 8;
+          dummyMatrix.position.set(x, heightY, z);
+          dummyMatrix.rotation.y = -angle + Math.PI / 2;
+          dummyMatrix.updateMatrix();
 
-            const cols = 5;
-            const rows = 12;
-            const cellW = 512 / cols;
-            const cellH = 512 / rows;
+          instancedSeatsMesh.setMatrixAt(seatIdx, dummyMatrix.matrix);
 
-            // Draw Parking Cell Grid
-            for (let c = 0; c < cols; c++) {
-                for (let r = 0; r < rows; r++) {
-                    pCtx.strokeRect(c * cellW + 4, r * cellH + 4, cellW - 8, cellH - 8);
-                }
-            }
+          const isAvailable = Math.random() > 0.45;
+          const status = isAvailable ? 'verde' : 'gris';
+          instancedSeatsMesh.setColorAt(seatIdx, isAvailable ? COLOR_AVAILABLE : COLOR_OCCUPIED);
 
-            const parkingTexture = new THREE.CanvasTexture(pCanvas);
-            const markGeo = new THREE.PlaneGeometry(width - 4, length - 4);
-            const markMat = new THREE.MeshBasicMaterial({ map: parkingTexture, transparent: true, opacity: 0.9 });
-            const markMesh = new THREE.Mesh(markGeo, markMat);
-            markMesh.rotation.x = -Math.PI / 2;
-            markMesh.position.set(centerX, 0.32, centerZ);
-            carsGroup.add(markMesh);
+          const distToCenter = Math.hypot(x, z);
+          const priceCOP = 140000 + Math.round(18000 * heightY);
+          const cValue = (0.10 + (ring * 0.002)).toFixed(2);
+          const qualityScore = Math.max(65, Math.min(95, 98 - Math.round(distToCenter * 0.28))).toFixed(1);
 
-            // PARK CARS PERFECTLY ALIGNED INSIDE MARKED CELLS ONLY
-            const carColors = [0xef4444, 0x3b82f6, 0xf59e0b, 0x64748b, 0xf8fafc, 0x0f172a, 0x10b981];
+          seatDataList.push({
+            id: seatIdx,
+            sector: `Tribuna Alta - Sector ${200 + Math.floor(s / 25)}`,
+            row: `Fila ${ring}`,
+            seatNum: `Silla ${(s % 25) + 1}`,
+            elevation: `+${heightY.toFixed(2)} m`,
+            elevationNum: heightY,
+            cValue: `${cValue} m`,
+            distance: `${distToCenter.toFixed(1)} m`,
+            score: `${qualityScore} %`,
+            price: priceCOP,
+            status: status
+          });
 
-            const startX = centerX - width / 2 + cellW * (width / 512) / 2 + 3;
-            const startZ = centerZ - length / 2 + cellH * (length / 512) / 2 + 2;
-
-            const stepX = (width - 8) / cols;
-            const stepZ = (length - 8) / rows;
-
-            for (let c = 0; c < cols; c++) {
-                for (let r = 0; r < rows; r++) {
-                    // 80% occupancy to leave some open parking stalls
-                    if (Math.random() < 0.8) {
-                        const px = startX + c * stepX;
-                        const pz = startZ + r * stepZ;
-
-                        // Align car exactly inside the bay cell rectangle
-                        const colorHex = carColors[Math.floor(Math.random() * carColors.length)];
-                        createDetailedCar(px, 0.35, pz, colorHex, (r % 2 === 0) ? 0 : Math.PI);
-                    }
-                }
-            }
+          seatIdx++;
         }
+      }
 
-        function createDetailedCar(x, y, z, colorHex, yawAngle) {
-            const car = new THREE.Group();
+      instancedSeatsMesh.instanceMatrix.needsUpdate = true;
+      if (instancedSeatsMesh.instanceColor) instancedSeatsMesh.instanceColor.needsUpdate = true;
+      scene.add(instancedSeatsMesh);
+    }
 
-            // Main Car Body Chassis
-            const bodyGeo = new THREE.BoxGeometry(2.4, 1.1, 4.8);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.5 });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.position.y = 0.8;
-            body.castShadow = true;
-            car.add(body);
+    function buildStructuralPylons() {
+      // 60 Exterior Y-shaped concrete pylons
+      const numPylons = 60;
+      const radiusX = 118;
+      const radiusZ = 92;
+      const pylonMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, roughness: 0.4 });
 
-            // Car Roof / Cabin
-            const cabinGeo = new THREE.BoxGeometry(2.1, 0.9, 2.6);
-            const cabin = new THREE.Mesh(cabinGeo, bodyMat);
-            cabin.position.set(0, 1.6, -0.2);
-            cabin.castShadow = true;
-            car.add(cabin);
+      for (let i = 0; i < numPylons; i++) {
+        const angle = (i / numPylons) * Math.PI * 2;
+        const x = Math.cos(angle) * radiusX;
+        const z = Math.sin(angle) * radiusZ;
 
-            // Tinted Windshield Glass
-            const glassGeo = new THREE.BoxGeometry(2.0, 0.8, 2.4);
-            const glassMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.7 });
-            const glass = new THREE.Mesh(glassGeo, glassMat);
-            glass.position.set(0, 1.62, -0.2);
-            car.add(glass);
+        const pylonGroup = new THREE.Group();
+        
+        // Vertical trunk
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.8, 24, 8), pylonMat);
+        trunk.position.y = 12;
+        trunk.castShadow = true;
+        pylonGroup.add(trunk);
 
-            // 4 Black Rubber Wheels
-            const wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.35, 12);
-            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.9 });
+        // V-Fork branches
+        const branch1 = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, 10, 8), pylonMat);
+        branch1.rotation.z = 0.35;
+        branch1.position.set(1.8, 27, 0);
 
-            const wPositions = [
-                [-1.15, 0.45, 1.4],
-                [1.15, 0.45, 1.4],
-                [-1.15, 0.45, -1.4],
-                [1.15, 0.45, -1.4]
-            ];
+        const branch2 = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, 10, 8), pylonMat);
+        branch2.rotation.z = -0.35;
+        branch2.position.set(-1.8, 27, 0);
 
-            wPositions.forEach(pos => {
-                const w = new THREE.Mesh(wheelGeo, wheelMat);
-                w.rotation.z = Math.PI / 2;
-                w.position.set(pos[0], pos[1], pos[2]);
-                w.castShadow = true;
-                car.add(w);
-            });
+        pylonGroup.add(branch1, branch2);
 
-            // Bright Headlights
-            const lightGeo = new THREE.BoxGeometry(0.4, 0.2, 0.1);
-            const headMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
-            const h1 = new THREE.Mesh(lightGeo, headMat);
-            h1.position.set(-0.8, 0.9, 2.42);
-            const h2 = new THREE.Mesh(lightGeo, headMat);
-            h2.position.set(0.8, 0.9, 2.42);
-            car.add(h1);
-            car.add(h2);
+        pylonGroup.position.set(x, 0, z);
+        pylonGroup.rotation.y = -angle + Math.PI / 2;
+        scene.add(pylonGroup);
+      }
+    }
 
-            // Tail Lights
-            const tailMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
-            const t1 = new THREE.Mesh(lightGeo, tailMat);
-            t1.position.set(-0.8, 0.9, -2.42);
-            const t2 = new THREE.Mesh(lightGeo, tailMat);
-            t2.position.set(0.8, 0.9, -2.42);
-            car.add(t1);
-            car.add(t2);
+    function buildRoofStructure() {
+      roofGroup = new THREE.Group();
 
-            car.position.set(x, y, z);
-            car.rotation.y = yawAngle;
-            carsGroup.add(car);
+      // Outer Compression Ring
+      const compRingGeo = new THREE.TorusGeometry(120, 2.2, 12, 64);
+      const steelMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.2 });
+      const compRing = new THREE.Mesh(compRingGeo, steelMat);
+      compRing.rotation.x = Math.PI / 2;
+      compRing.position.y = 32;
+      roofGroup.add(compRing);
+
+      // Inner Tension Ring
+      const tensRingGeo = new THREE.TorusGeometry(75, 1.4, 12, 64);
+      const tensRing = new THREE.Mesh(tensRingGeo, steelMat);
+      tensRing.rotation.x = Math.PI / 2;
+      tensRing.position.y = 28;
+      roofGroup.add(tensRing);
+
+      // Translucent PTFE Roof Membrane
+      const membraneGeo = new THREE.RingGeometry(75, 120, 64);
+      const membraneMat = new THREE.MeshStandardMaterial({
+        color: 0xf8fafc,
+        transparent: true,
+        opacity: 0.65,
+        side: THREE.DoubleSide,
+        roughness: 0.1
+      });
+      const membrane = new THREE.Mesh(membraneGeo, membraneMat);
+      membrane.rotation.x = Math.PI / 2;
+      membrane.position.y = 30;
+      roofGroup.add(membrane);
+
+      scene.add(roofGroup);
+    }
+
+    function buildFoodTrucksAndKiosks() {
+      // Pedestrian Concourse Plaza Base Plane
+      const plazaGeo = new THREE.RingGeometry(120, 182, 64);
+      const plazaMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+      const plaza = new THREE.Mesh(plazaGeo, plazaMat);
+      plaza.rotation.x = -Math.PI / 2;
+      plaza.position.y = 0.01;
+      scene.add(plaza);
+
+      // 12 Food Kiosks spaced around plaza
+      const numKiosks = 12;
+      const radius = 162;
+
+      for (let i = 0; i < numKiosks; i++) {
+        const angle = (i / numKiosks) * Math.PI * 2;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+
+        const kioskGroup = new THREE.Group();
+
+        // Kiosk Box
+        const boxGeo = new THREE.BoxGeometry(7, 3.5, 4);
+        const boxMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 });
+        const box = new THREE.Mesh(boxGeo, boxMat);
+        box.position.y = 1.75;
+        kioskGroup.add(box);
+
+        // Striped Awning Canopy
+        const awningGeo = new THREE.BoxGeometry(7.6, 0.4, 2.2);
+        const awningMat = new THREE.MeshStandardMaterial({ color: (i % 2 === 0) ? 0xef4444 : 0xf59e0b });
+        const awning = new THREE.Mesh(awningGeo, awningMat);
+        awning.position.set(0, 3.2, 1.2);
+        kioskGroup.add(awning);
+
+        // Illuminated Menu Sign
+        const signGeo = new THREE.BoxGeometry(4, 1.2, 0.2);
+        const signMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
+        const sign = new THREE.Mesh(signGeo, signMat);
+        sign.position.set(0, 4.2, 0);
+        kioskGroup.add(sign);
+
+        // Warm Ambient PointLight
+        const light = new THREE.PointLight(0xfef08a, 1.2, 15);
+        light.position.set(0, 3, 2);
+        kioskGroup.add(light);
+
+        kioskGroup.position.set(x, 0, z);
+        kioskGroup.rotation.y = -angle + Math.PI / 2;
+        scene.add(kioskGroup);
+      }
+    }
+
+    function buildOrganizedParkingLotsAndCars() {
+      // 3 Organized Parking Lots completely OUTSIDE stadium concourse (r = 188m to 230m)
+      const parkingMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+      const lineMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+
+      // Parking Lots Configuration: North, South, West
+      const lots = [
+        { name: 'Norte', x: 0, z: -210, w: 140, d: 50 },
+        { name: 'Sur', x: 0, z: 210, w: 140, d: 50 },
+        { name: 'Oeste', x: -210, z: 0, w: 50, d: 140 }
+      ];
+
+      lots.forEach(lot => {
+        // Asphalt ground plane
+        const lotGeo = new THREE.PlaneGeometry(lot.w, lot.d);
+        const lotMesh = new THREE.Mesh(lotGeo, parkingMat);
+        lotMesh.rotation.x = -Math.PI / 2;
+        lotMesh.position.set(lot.x, 0.02, lot.z);
+        lotMesh.receiveShadow = true;
+        scene.add(lotMesh);
+
+        // Access road connecting lot to perimeter concourse
+        const roadGeo = new THREE.PlaneGeometry(24, 30);
+        const roadMesh = new THREE.Mesh(roadGeo, parkingMat);
+        roadMesh.rotation.x = -Math.PI / 2;
+        
+        if (lot.z !== 0) {
+          roadMesh.position.set(lot.x, 0.02, lot.z > 0 ? 172 : -172);
+        } else {
+          roadMesh.rotation.z = Math.PI / 2;
+          roadMesh.position.set(-172, 0.02, lot.z);
         }
+        scene.add(roadMesh);
 
-        function buildExteriorFoodTrucks() {
-            const count = 10;
-            const radius = 138;
+        // Draw Stall White Markings & Park 3D Cars
+        const isHorizontal = lot.w > lot.d;
+        const numRows = 2;
+        const stallsPerRow = 18;
 
-            for (let i = 0; i < count; i++) {
-                const angle = (i / count) * Math.PI * 2;
-                const x = Math.cos(angle) * (radius * 1.12);
-                const z = Math.sin(angle) * radius;
+        const carColors = [0xe2e8f0, 0x64748b, 0xef4444, 0x2563eb, 0x0f172a, 0xd97706];
 
-                // Avoid blocking parking entrances
-                if ((x > 60 && x < 180) || (x < -60 && x > -180)) continue;
+        for (let r = 0; r < numRows; r++) {
+          for (let c = 0; c < stallsPerRow; c++) {
+            let cx, cz, carRot;
 
-                createFoodTruck(x, 0, z, angle + Math.PI / 2);
-            }
-        }
-
-        function createFoodTruck(x, y, z, rotation) {
-            const truck = new THREE.Group();
-
-            // Truck Body Box
-            const bodyGeo = new THREE.BoxGeometry(3.2, 2.2, 5.5);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4 });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.position.y = 1.4;
-            truck.add(body);
-
-            // Striped Awning Toldo
-            const awningGeo = new THREE.BoxGeometry(3.4, 0.2, 2.0);
-            const awningMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.5 });
-            const awning = new THREE.Mesh(awningGeo, awningMat);
-            awning.position.set(0, 2.3, 1.8);
-            awning.rotation.x = 0.2;
-            truck.add(awning);
-
-            // Warm Ambient Point Light
-            const light = new THREE.PointLight(0xfba518, 1.2, 18);
-            light.position.set(0, 2.5, 2.2);
-            truck.add(light);
-
-            truck.position.set(x, y, z);
-            truck.rotation.y = rotation;
-            kiosksGroup.add(truck);
-        }
-
-        function build2DSeatMatrixUI() {
-            const grid = document.getElementById('seat-matrix-grid');
-            grid.innerHTML = '';
-
-            // Render first 80 representative seats in 2D matrix
-            const sampleSeats = seatDataList.slice(0, 80);
-
-            sampleSeats.forEach(data => {
-                const btn = document.createElement('button');
-                btn.className = `w-full h-6 rounded text-[9px] font-bold transition flex items-center justify-center ${
-                    data.available ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950' : 'bg-slate-600 text-slate-400 cursor-not-allowed'
-                }`;
-                btn.innerText = data.number;
-                btn.title = `${data.code} - ${data.available ? 'Disponible' : 'Ocupado'}`;
-                btn.onclick = () => selectSeatByData(data);
-                grid.appendChild(btn);
-            });
-        }
-
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        function setupInteractions() {
-            const container = document.getElementById('three-container');
-            const tooltip = document.getElementById('seat-tooltip');
-
-            container.addEventListener('mousemove', (e) => {
-                const rect = container.getBoundingClientRect();
-                mouse.x = ((e.clientX - rect.left) / container.clientWidth) * 2 - 1;
-                mouse.y = -((e.clientY - rect.top) / container.clientHeight) * 2 + 1;
-
-                raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(seatMeshes);
-
-                if (intersects.length > 0) {
-                    const mesh = intersects[0].object;
-                    const data = mesh.userData;
-
-                    tooltip.style.left = `${e.clientX - rect.left + 15}px`;
-                    tooltip.style.top = `${e.clientY - rect.top - 15}px`;
-                    tooltip.classList.remove('hidden');
-
-                    document.getElementById('tooltip-code').innerText = data.code;
-                    document.getElementById('tooltip-price').innerText = `$ ${data.price.toLocaleString('es-CO')} COP`;
-                    document.getElementById('tooltip-status').innerText = data.available ? 'VERDE: DISPONIBLE' : 'GRIS: OCUPADO';
-                    document.getElementById('tooltip-status').className = data.available ? 'text-[9px] font-bold text-emerald-400' : 'text-[9px] font-bold text-slate-400';
-                } else {
-                    tooltip.classList.add('hidden');
-                }
-            });
-
-            container.addEventListener('click', (e) => {
-                raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(seatMeshes);
-
-                if (intersects.length > 0) {
-                    const data = intersects[0].object.userData;
-                    selectSeatByData(data);
-                }
-            });
-        }
-
-        function selectSeatByData(data) {
-            // Restore previous selected seat mesh color if applicable
-            if (selectedSeatMesh) {
-                const prevData = selectedSeatMesh.userData;
-                selectedSeatMesh.material.color.setHex(prevData.available ? COLOR_AVAILABLE : COLOR_OCCUPIED);
-            }
-
-            selectedSeatData = data;
-            selectedSeatMesh = data.mesh;
-
-            // Highlight newly selected seat
-            if (selectedSeatMesh) {
-                selectedSeatMesh.material.color.setHex(COLOR_SELECTED);
-            }
-
-            // Update UI Details Card
-            document.getElementById('card-seat-code').innerText = data.code;
-            document.getElementById('card-seat-h').innerText = `+${data.height} m`;
-            document.getElementById('card-seat-c').innerText = `${data.cValue} m (C >= 0.09m)`;
-            document.getElementById('card-seat-dist').innerText = `${data.distance} m`;
-            document.getElementById('card-seat-quality').innerText = `${data.quality} %`;
-            document.getElementById('card-seat-price').innerText = `$ ${data.price.toLocaleString('es-CO')} COP`;
-
-            const statusBadge = document.getElementById('card-seat-status');
-            const buyBtn = document.getElementById('buy-seat-btn');
-
-            if (data.available) {
-                statusBadge.innerText = 'DISPONIBLE';
-                statusBadge.className = 'px-2 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
-                buyBtn.innerText = 'COMPRAR ASIENTO';
-                buyBtn.className = 'px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition';
-                buyBtn.disabled = false;
+            if (isHorizontal) {
+              cx = lot.x - (lot.w / 2) + 12 + c * 6.8;
+              cz = lot.z - 12 + r * 24;
+              carRot = (r === 0) ? Math.PI / 2 : -Math.PI / 2;
             } else {
-                statusBadge.innerText = 'OCUPADO';
-                statusBadge.className = 'px-2 py-1 rounded text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600';
-                buyBtn.innerText = 'LIBERAR ASIENTO';
-                buyBtn.className = 'px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 font-extrabold text-xs rounded-xl transition';
-                buyBtn.disabled = false;
+              cx = lot.x - 12 + r * 24;
+              cz = lot.z - (lot.d / 2) + 12 + c * 6.8;
+              carRot = (r === 0) ? 0 : Math.PI;
             }
 
-            // Switch to seat tab automatically
-            switchTab('tab-seats');
-        }
+            // White Stall Marking Lines
+            const lineGeo = new THREE.PlaneGeometry(0.25, 4.8);
+            const lineMesh = new THREE.Mesh(lineGeo, lineMat);
+            lineMesh.rotation.x = -Math.PI / 2;
+            lineMesh.position.set(cx, 0.03, cz);
+            scene.add(lineMesh);
 
-        function toggleSeatPurchase() {
-            if (!selectedSeatData) return;
-
-            if (selectedSeatData.available) {
-                // Check wallet funds
-                if (walletBalance < selectedSeatData.price) {
-                    alert("Saldo insuficiente en billetera.");
-                    return;
-                }
-
-                walletBalance -= selectedSeatData.price;
-                selectedSeatData.available = false;
-                selectedSeatMesh.material.color.setHex(COLOR_OCCUPIED);
-            } else {
-                // Refund
-                walletBalance += selectedSeatData.price;
-                selectedSeatData.available = true;
-                selectedSeatMesh.material.color.setHex(COLOR_AVAILABLE);
+            // Park Car in 85% of stalls
+            if (Math.random() < 0.85) {
+              const carColor = carColors[Math.floor(Math.random() * carColors.length)];
+              const isSUV = Math.random() > 0.6;
+              create3DVehicleMesh(cx, cz, carRot, carColor, isSUV);
             }
-
-            // Update Wallet UI
-            document.getElementById('wallet-balance').innerText = `$ ${walletBalance.toLocaleString('es-CO')} COP`;
-
-            // Refresh UI card
-            selectSeatByData(selectedSeatData);
-            build2DSeatMatrixUI();
+          }
         }
+      });
+    }
 
-        function toggleRoof() {
-            isRoofVisible = !isRoofVisible;
-            roofGroup.visible = isRoofVisible;
+    function create3DVehicleMesh(x, z, rotationY, bodyColorHex, isSUV) {
+      const carGroup = new THREE.Group();
 
-            const text = isRoofVisible ? 'VISIBLE' : 'OCULTO';
-            document.getElementById('roof-status-text').innerText = text;
-            document.getElementById('hud-roof-text').innerText = text;
+      // Car Body
+      const bodyW = isSUV ? 2.4 : 2.2;
+      const bodyH = isSUV ? 1.4 : 1.0;
+      const bodyL = isSUV ? 4.6 : 4.4;
 
-            const icon = document.getElementById('roof-icon');
-            icon.className = isRoofVisible ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+      const bodyGeo = new THREE.BoxGeometry(bodyW, bodyH, bodyL);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColorHex, metalness: 0.5, roughness: 0.3 });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.position.y = bodyH / 2 + 0.4;
+      body.castShadow = true;
+      carGroup.add(body);
+
+      // Cabin / Roof Windows
+      const cabinGeo = new THREE.BoxGeometry(bodyW * 0.85, bodyH * 0.75, bodyL * 0.5);
+      const glassMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.1 });
+      const cabin = new THREE.Mesh(cabinGeo, glassMat);
+      cabin.position.set(0, bodyH + 0.3, -0.2);
+      carGroup.add(cabin);
+
+      // 4 Wheels
+      const wheelGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.35, 12);
+      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.9 });
+
+      const wheelPositions = [
+        [-bodyW / 2 - 0.1, 0.38, bodyL / 3],
+        [bodyW / 2 + 0.1, 0.38, bodyL / 3],
+        [-bodyW / 2 - 0.1, 0.38, -bodyL / 3],
+        [bodyW / 2 + 0.1, 0.38, -bodyL / 3]
+      ];
+
+      wheelPositions.forEach(pos => {
+        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+        wheel.rotation.z = Math.PI / 2;
+        wheel.position.set(...pos);
+        carGroup.add(wheel);
+      });
+
+      // Front Headlights
+      const lightGeo = new THREE.BoxGeometry(0.4, 0.2, 0.1);
+      const lightMat = new THREE.MeshBasicMaterial({ color: 0xfffbeb });
+      const hl1 = new THREE.Mesh(lightGeo, lightMat);
+      hl1.position.set(-0.7, bodyH * 0.6, bodyL / 2 + 0.05);
+      const hl2 = hl1.clone();
+      hl2.position.x = 0.7;
+      carGroup.add(hl1, hl2);
+
+      carGroup.position.set(x, 0, z);
+      carGroup.rotation.y = rotationY;
+      scene.add(carGroup);
+    }
+
+    function buildOrganizedTreesAndLandscaping() {
+      // 1. Perimeter Tree Buffer Ring (r = 180m) separating concourse from parking
+      const numRingTrees = 36;
+      const radiusRing = 180;
+
+      for (let i = 0; i < numRingTrees; i++) {
+        const angle = (i / numRingTrees) * Math.PI * 2;
+        const x = Math.cos(angle) * radiusRing;
+        const z = Math.sin(angle) * radiusRing;
+
+        // Skip planting on entrance roads
+        if (Math.abs(x) < 18 || Math.abs(z) < 18) continue;
+
+        const isPalm = (i % 2 === 0);
+        if (isPalm) {
+          createPalmTreeMesh(x, z);
+        } else {
+          createLushTreeMesh(x, z);
         }
+      }
 
-        function setCameraView(preset) {
-            if (preset === 'overview') {
-                animateCameraTo(160, 110, 220, 0, 10, 0);
-            } else if (preset === 'pitch') {
-                animateCameraTo(0, 3, 20, 0, 3, 0);
-            } else if (preset === 'parking') {
-                animateCameraTo(160, 45, 20, 120, 0, 0); // Zoom into North Parking
-            } else if (preset === 'corcovado') {
-                animateCameraTo(-180, 80, -100, -250, 120, -190);
-            }
+      // 2. Main Entrance Boulevards Tree Rows along parking roads
+      const boulevardRoads = [
+        { startX: -80, startZ: -180, endX: 80, endZ: -180 },
+        { startX: -80, startZ: 180, endX: 80, endZ: 180 }
+      ];
+
+      boulevardRoads.forEach(b => {
+        for (let x = b.startX; x <= b.endX; x += 16) {
+          createPalmTreeMesh(x, b.startZ - 6);
+          createPalmTreeMesh(x, b.startZ + 6);
         }
+      });
+    }
 
-        function animateCameraTo(cx, cy, cz, tx, ty, tz) {
-            let step = 0;
-            const startPos = camera.position.clone();
-            const startTarget = controls.target.clone();
+    function createPalmTreeMesh(x, z) {
+      const palmGroup = new THREE.Group();
 
-            const endPos = new THREE.Vector3(cx, cy, cz);
-            const endTarget = new THREE.Vector3(tx, ty, tz);
+      // Curved Trunk
+      const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, 9, 8);
+      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.y = 4.5;
+      trunk.rotation.z = (Math.random() - 0.5) * 0.15;
+      palmGroup.add(trunk);
 
-            function loop() {
-                step += 0.04;
-                if (step <= 1) {
-                    camera.position.lerpVectors(startPos, endPos, step);
-                    controls.target.lerpVectors(startTarget, endTarget, step);
-                    controls.update();
-                    requestAnimationFrame(loop);
-                }
-            }
-            loop();
+      // Palm Fronds Crown
+      const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.4, side: THREE.DoubleSide });
+      const numFronds = 7;
+
+      for (let i = 0; i < numFronds; i++) {
+        const frondGeo = new THREE.ConeGeometry(1.4, 5, 4);
+        const frond = new THREE.Mesh(frondGeo, leafMat);
+        const angle = (i / numFronds) * Math.PI * 2;
+        frond.rotation.x = Math.PI / 3;
+        frond.rotation.y = angle;
+        frond.position.set(0, 9, 0);
+        palmGroup.add(frond);
+      }
+
+      palmGroup.position.set(x, 0, z);
+      scene.add(palmGroup);
+    }
+
+    function createLushTreeMesh(x, z) {
+      const treeGroup = new THREE.Group();
+
+      // Trunk
+      const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 6, 8);
+      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 });
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.y = 3;
+      treeGroup.add(trunk);
+
+      // Fluffy Canopy
+      const canopyGeo = new THREE.DodecahedronGeometry(3.8, 1);
+      const canopyMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.6 });
+      const canopy = new THREE.Mesh(canopyGeo, canopyMat);
+      canopy.position.y = 7.5;
+      treeGroup.add(canopy);
+
+      treeGroup.position.set(x, 0, z);
+      scene.add(treeGroup);
+    }
+
+    function setupRaycasterEvents() {
+      const container = document.getElementById('canvas-container');
+
+      container.addEventListener('click', function (event) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObject(instancedSeatsMesh);
+
+        if (intersects.length > 0) {
+          const instanceId = intersects[0].instanceId;
+          selectSeatByIndex(instanceId);
         }
+      });
+    }
 
-        function resetCamera() {
-            setCameraView('overview');
+    function selectSeatByIndex(idx) {
+      if (idx === null || idx < 0 || idx >= seatDataList.length) return;
+
+      // Revert previous selected seat color
+      if (selectedSeatIndex !== null) {
+        const prevData = seatDataList[selectedSeatIndex];
+        const prevColor = (prevData.status === 'verde') ? COLOR_AVAILABLE : COLOR_OCCUPIED;
+        instancedSeatsMesh.setColorAt(selectedSeatIndex, prevColor);
+      }
+
+      // Highlight new seat in Amber Gold
+      selectedSeatIndex = idx;
+      instancedSeatsMesh.setColorAt(idx, COLOR_SELECTED);
+      instancedSeatsMesh.instanceColor.needsUpdate = true;
+
+      // Update Inspector UI Card
+      const data = seatDataList[idx];
+      document.getElementById('seat-sector').innerText = data.sector;
+      document.getElementById('seat-row').innerText = data.row;
+      document.getElementById('seat-number').innerText = data.seatNum;
+      document.getElementById('seat-elevation').innerText = data.elevation;
+      document.getElementById('seat-c-value').innerText = data.cValue;
+      document.getElementById('seat-distance').innerText = data.distance;
+      document.getElementById('seat-score').innerText = data.score;
+
+      const priceFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(data.price);
+      document.getElementById('seat-price').innerText = priceFormatted;
+
+      const statusBadge = document.getElementById('seat-badge-status');
+      const buyBtnText = document.getElementById('btn-buy-text');
+      const buyBtn = document.getElementById('btn-buy-sell');
+
+      if (data.status === 'verde') {
+        statusBadge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+        statusBadge.innerText = "DISPONIBLE";
+        buyBtnText.innerText = "COMPRAR SILLA SELECCIONADA";
+        buyBtn.className = "w-full py-3 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-2";
+      } else {
+        statusBadge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600";
+        statusBadge.innerText = "OCUPADO";
+        buyBtnText.innerText = "SILLA OCUPADA (LIBERAR / VENDER)";
+        buyBtn.className = "w-full py-3 px-4 rounded-xl font-bold text-sm bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all transform active:scale-95 flex items-center justify-center gap-2 border border-slate-700";
+      }
+    }
+
+    function processSeatTransaction() {
+      if (selectedSeatIndex === null) return;
+
+      const data = seatDataList[selectedSeatIndex];
+
+      if (data.status === 'verde') {
+        // Buy Seat
+        if (userWalletBalance >= data.price) {
+          userWalletBalance -= data.price;
+          data.status = 'gris';
+          updateWalletUI();
+          selectSeatByIndex(selectedSeatIndex);
+          update2DMatrixDot(selectedSeatIndex, false);
+        } else {
+          alert("Saldo insuficiente en tu billetera Fan.");
         }
+      } else {
+        // Sell / Release Seat
+        userWalletBalance += data.price;
+        data.status = 'verde';
+        updateWalletUI();
+        selectSeatByIndex(selectedSeatIndex);
+        update2DMatrixDot(selectedSeatIndex, true);
+      }
+    }
 
-        function updateTimeOfDay(val) {
-            const hour = parseFloat(val);
-            document.getElementById('time-display').innerText = `${Math.floor(hour)}:${hour % 1 === 0 ? '00' : '30'} ${hour >= 12 ? 'PM' : 'AM'}`;
+    function updateWalletUI() {
+      const formatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(userWalletBalance);
+      document.getElementById('user-wallet-balance').innerText = formatted;
+    }
 
-            const angle = ((hour - 6) / 16) * Math.PI;
-            dirLight.position.x = Math.cos(angle) * 200;
-            dirLight.position.y = Math.sin(angle) * 200;
+    function setCameraView(preset) {
+      switch (preset) {
+        case 'aerea':
+          animateCameraTo(0, 240, 260, 0, 0, 0);
+          break;
+        case 'fachada':
+          animateCameraTo(0, 45, 230, 0, 15, 0);
+          break;
+        case 'parqueadero':
+          animateCameraTo(0, 35, -230, 0, 0, -200);
+          break;
+        case 'tribuna':
+          animateCameraTo(0, 28, 95, 0, 0, 0);
+          break;
+        case 'campo':
+          animateCameraTo(0, 2, 22, 0, 2, 0);
+          break;
+      }
+    }
 
-            if (hour >= 18.5 || hour < 6.5) {
-                // Night mode
-                scene.background.setHex(0x020617);
-                scene.fog.color.setHex(0x020617);
-                dirLight.intensity = 0.2;
-            } else {
-                // Day / Golden hour
-                scene.background.setHex(0x0a0f1d);
-                scene.fog.color.setHex(0x0a0f1d);
-                dirLight.intensity = 1.4;
-            }
-        }
+    function animateCameraTo(cx, cy, cz, tx, ty, tz) {
+      camera.position.set(cx, cy, cz);
+      controls.target.set(tx, ty, tz);
+      controls.update();
+    }
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(tabId).classList.remove('hidden');
+    function toggleRoofVisibility() {
+      isRoofVisible = !isRoofVisible;
+      roofGroup.visible = isRoofVisible;
+      const statusText = document.getElementById('roof-status-text');
+      statusText.innerText = isRoofVisible ? "VISIBLE" : "OCULTO";
+      statusText.className = isRoofVisible ? "text-emerald-400" : "text-slate-400";
+    }
 
-            const tabs = ['tab-3d', 'tab-seats', 'tab-bim', 'tab-exterior'];
-            tabs.forEach(id => {
-                const btn = document.getElementById(`btn-${id}`);
-                if (id === tabId) {
-                    btn.className = "py-2.5 rounded-lg text-emerald-400 bg-slate-800 shadow transition flex flex-col items-center gap-1 font-bold";
-                } else {
-                    btn.className = "py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition flex flex-col items-center gap-1 font-normal";
-                }
-            });
-        }
+    function toggle2DMatrixModal() {
+      const modal = document.getElementById('modal-2d-matrix');
+      modal.classList.toggle('hidden');
+    }
 
-        function initChartJS() {
-            const ctx = document.getElementById('cableChart').getContext('2d');
+    function generate2DMatrixGrid() {
+      const container = document.getElementById('matrix-grid-container');
+      container.innerHTML = '';
 
-            const xVals = [];
-            const yVals = [];
-            for (let x = -38; x <= 38; x += 2) {
-                xVals.push(x);
-                // Parabola: y(x) = (4*f / L^2) * x^2
-                const sag = (4 * 3.2 / (76 * 76)) * (x * x);
-                yVals.push((34 - sag).toFixed(2));
-            }
+      // Sample first 192 seats for matrix grid
+      const sampleCount = Math.min(192, seatDataList.length);
 
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: xVals,
-                    datasets: [{
-                        label: 'Perfil Cable Techo (m)',
-                        data: yVals,
-                        borderColor: '#f59e0b',
-                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
-                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
-                    }
-                }
-            });
-        }
-
-        function onWindowResize() {
-            const container = document.getElementById('three-container');
-            camera.aspect = container.clientWidth / container.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-        }
-
-        // Start initialization on load
-        window.onload = function() {
-            init3D();
-            initChartJS();
+      for (let i = 0; i < sampleCount; i++) {
+        const seat = seatDataList[i];
+        const dot = document.createElement('button');
+        dot.id = `matrix-dot-${i}`;
+        dot.className = `w-4 h-4 rounded-sm transition transform hover:scale-125 ${seat.status === 'verde' ? 'bg-emerald-500' : 'bg-slate-600'}`;
+        dot.title = `${seat.sector} | ${seat.row} ${seat.seatNum}`;
+        dot.onclick = function () {
+          selectSeatByIndex(i);
+          toggle2DMatrixModal();
         };
-    </script>
+        container.appendChild(dot);
+      }
+    }
+
+    function update2DMatrixDot(idx, isGreen) {
+      const dot = document.getElementById(`matrix-dot-${idx}`);
+      if (dot) {
+        dot.className = `w-4 h-4 rounded-sm transition transform hover:scale-125 ${isGreen ? 'bg-emerald-500' : 'bg-slate-600'}`;
+      }
+    }
+
+    function switchTab(tabName) {
+      const tabs = ['3d', 'cotas', 'costos', 'cable'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        const content = document.getElementById(`tab-content-${t}`);
+        if (t === tabName) {
+          btn.className = "px-4 py-3 border-b-2 border-emerald-400 text-emerald-400 font-semibold flex items-center gap-2 whitespace-nowrap transition-all";
+          content.classList.remove('hidden');
+        } else {
+          btn.className = "px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap transition-all";
+          content.classList.add('hidden');
+        }
+      });
+
+      if (tabName === '3d') onWindowResize();
+    }
+
+    function updateHVACSimulation() {
+      const temp = parseFloat(document.getElementById('temp-slider').value);
+      document.getElementById('temp-slider-val').innerText = `${temp} °C`;
+
+      const solarMW = (2.23 * (temp / 32)).toFixed(2);
+      document.getElementById('solar-heat-val').innerText = `${solarMW} MW`;
+
+      const totalMW = (6.31 + parseFloat(solarMW) + 1.28).toFixed(2);
+      const totalTR = Math.round(totalMW * 284.34);
+
+      document.getElementById('total-hvac-val').innerText = `${totalMW} MW (${totalTR.toLocaleString('es-CO')} TR)`;
+    }
+
+    let parabolaChart;
+
+    function initParabolaChart() {
+      const ctx = document.getElementById('parabolaChart').getContext('2d');
+
+      parabolaChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Cable de Cubierta y(x)',
+            data: [],
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: { display: true, text: 'Distancia x (m)', color: '#94a3b8' },
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { color: '#94a3b8' }
+            },
+            y: {
+              title: { display: true, text: 'Flecha y (m)', color: '#94a3b8' },
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { color: '#94a3b8' },
+              reverse: true
+            }
+          },
+          plugins: {
+            legend: { labels: { color: '#f8fafc' } }
+          }
+        }
+      });
+
+      updateParabolaChart();
+    }
+
+    function updateParabolaChart() {
+      const f = parseFloat(document.getElementById('parabola-f-input').value);
+      const L = parseFloat(document.getElementById('parabola-L-input').value);
+      const w = parseFloat(document.getElementById('parabola-w-input').value);
+
+      document.getElementById('parabola-f-val').innerText = `${f.toFixed(1)} m`;
+      document.getElementById('parabola-L-val').innerText = `${L.toFixed(1)} m`;
+      document.getElementById('parabola-w-val').innerText = `${w.toFixed(1)} kN/m`;
+
+      // H = (w * L^2) / (8 * f)
+      const H = (w * Math.pow(L, 2)) / (8 * f);
+      const V = (w * L) / 2;
+      const Tmax = Math.sqrt(Math.pow(H, 2) + Math.pow(V, 2));
+
+      document.getElementById('calc-H-val').innerText = `${H.toLocaleString('es-CO', { maximumFractionDigits: 1 })} kN`;
+      document.getElementById('calc-T-val').innerText = `${Tmax.toLocaleString('es-CO', { maximumFractionDigits: 1 })} kN`;
+
+      // Generate points for parabola: y(x) = (4 * f / L^2) * x * (L - x)
+      const labels = [];
+      const points = [];
+      const steps = 40;
+
+      for (let i = 0; i <= steps; i++) {
+        const x = (i / steps) * L;
+        const y = (4 * f / Math.pow(L, 2)) * x * (L - x);
+        labels.push(x.toFixed(0));
+        points.push(y.toFixed(2));
+      }
+
+      parabolaChart.data.labels = labels;
+      parabolaChart.data.datasets[0].data = points;
+      parabolaChart.update();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+  </script>
 </body>
 </html>
